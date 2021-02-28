@@ -1,0 +1,67 @@
+<div id="{{table_id}}" class="tabcontent">
+    <h3>{{table_title}}</h3>
+    <br>
+    <table class="table table-bordered table-striped" height="100em">
+        {# TODO: Add calculated columns to page #}
+        <thead class="table-dark">
+            {% include "stockmanagement/search_tooltip.html" with column_name="Date" table_id=table_id column_id=0 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Invoice Number" table_id=table_id column_id=1 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="PO Number" table_id=table_id column_id=2 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="PC Job" table_id=table_id column_id=3 %}
+
+            {% if supplier %}
+                {% include "stockmanagement/search_tooltip.html" with column_name="Supplier" table_id=table_id column_id=4 %}
+            {% else %}
+                {% include "stockmanagement/search_tooltip.html" with column_name="Customer" table_id=table_id column_id=4 %}
+            {% endif %}
+
+            {% include "stockmanagement/search_tooltip.html" with column_name="Item" table_id=table_id column_id=5 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Item Description" table_id=table_id column_id=6 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Group" table_id=table_id column_id=7 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Quantity" table_id=table_id column_id=8 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Price" table_id=table_id column_id=9 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Total Price" table_id=table_id column_id=10 %}
+        <thead>
+        <tbody id="{{table_id}}-table">
+            {% for stock in stocks %}
+                <tr>
+                    <td>{{stock.date}}</td>
+                    <td scope="row">{{stock.invoice_id}}</td>
+                    <td>{{stock.purchase_order_number}}</td>
+                    <td>{{stock.pc_job}}</td>
+                    <td>{{stock.supplier}}</td>
+                    <td>{{stock.item.code}}</td>
+                    <td>{{stock.item.description}}</td>
+                    <td>{{stock.item.group.name}}</td>
+                    <td>{{stock.quantity}}</td>
+                    <td>{{stock.price}}</td>
+                    <td>{{stock.total_price}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>
+        $(function(){
+            $(".{{table_id}}-search").on("keyup", function() {
+                console.log("hello");
+                if($(this).val().toLowerCase() !== ""){
+                    $(this).parent().addClass("searched");
+                } else {
+                    $(this).parent().removeClass("searched");
+                }
+
+                $("#{{table_id}}-table tr").each(function() {
+                    row = $(this);
+                    var is_found = true;
+                    $(".{{table_id}}-search").each(function(){
+                        var value = $(this).val().toLowerCase();
+                        var column = $(this).attr('column-id');
+                        is_found =  row.find('td').eq(column).text().toLowerCase().indexOf(value) > -1;
+                        return is_found;
+                    });
+                    $(this).toggle(is_found);
+                });
+            });
+        });
+    </script>
+</div>

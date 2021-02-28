@@ -1,0 +1,28 @@
+{% extends 'ted_site/base.html' %}
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'stockmanagement/css/tab_style.css' %}">
+    <link rel="stylesheet" href="{% static 'stockmanagement/css/search.css' %}">
+{% endblock head %}
+{% block title %}
+    PCElemac | Stock Management
+{% endblock title %}
+{% block body %}
+    <!-- Tab links -->
+    <div class="tab">
+        <button class="tablinks" onclick="openStock(event, 'instock')" id="default-open">Instock</button>
+        <button class="tablinks" onclick="openStock(event, 'outstock')">Outstock</button>
+        <button class="tablinks" onclick="openStock(event, 'metal-instock')">Metal Instock</button>
+        <button class="tablinks" onclick="openStock(event, 'metal-outstock')">Metal Outstock</button>
+    </div>
+
+    <!-- Tab content -->
+    {% include "stockmanagement/stock_table.html" with table_id="instock" table_title="Instock" stocks=instock supplier=True %}
+    {% include "stockmanagement/stock_table.html" with table_id="outstock" table_title="Outstock" stocks=outstock supplier=False %}
+    {% include "stockmanagement/stock_table.html" with table_id="metal-instock" table_title="Metal Instock" stocks=metal_instock supplier=True %}
+    {% include "stockmanagement/stock_table.html" with table_id="metal-outstock" table_title="Metal Outstock" stocks=metal_outstock supplier=False %}
+{% endblock body %}
+{% block footer %}
+    <script src="{% static 'stockmanagement/js/tab_toggle.js' %}"></script>
+    <script src="{% static 'stockmanagement/js/column_search.js' %}"></script>
+{% endblock footer %}
