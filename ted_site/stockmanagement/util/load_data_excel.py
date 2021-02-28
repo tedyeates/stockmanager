@@ -96,16 +96,6 @@ def load_stock(stock_sheet, is_instock, is_metalstock):
         stock_quantity = stock_sheet[QUANTITY_COL + str(row_num)].value
         stock_price = stock_sheet[PRICE_COL + str(row_num)].value
 
-
-        print(stock_iv)
-        print(stock_date)
-        print(stock_po)
-        print(stock_pc)
-        print(stock_supplier)
-        print(stock_item)
-        print(stock_quantity)
-        print(stock_price)
-
         if stock_quantity == None:
             print("[CRIT] No Quantity")
             break
