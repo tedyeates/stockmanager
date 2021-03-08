@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from django.views.generic import ListView
 from django.db.models import Count, F, ExpressionWrapper, DecimalField
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from stockmanagement.models import Stock, Item
 
-
-class StockDisplay(ListView):
+class StockDisplay(LoginRequiredMixin, ListView):
     context_object_name = 'stock'
     template_name='stockmanagement/stock_display.html'
     model = Item

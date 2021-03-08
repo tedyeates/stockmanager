@@ -1,4 +1,4 @@
-{% extends 'ted_site/base.html' %}
+{% extends 'ted_site/base_home.html' %}
 {% load static %}
 {% block head %}
     <link rel="stylesheet" href="{% static 'stockmanagement/css/tab_style.css' %}">
@@ -7,15 +7,15 @@
 {% block title %}
     PCElemac | Stock Management
 {% endblock title %}
-{% block body %}
-    <!-- Tab links -->
-    <div class="tab">
-        <button class="tablinks" onclick="openStock(event, 'instock')" id="default-open">Instock</button>
-        <button class="tablinks" onclick="openStock(event, 'outstock')">Outstock</button>
-        <button class="tablinks" onclick="openStock(event, 'metal-instock')">Metal Instock</button>
-        <button class="tablinks" onclick="openStock(event, 'metal-outstock')">Metal Outstock</button>
-    </div>
+<!-- Tab links -->
+{% block navbar_items %}
+    <button class="tablinks" onclick="openStock(event, 'instock')" id="default-open">Instock</button>
+    <button class="tablinks" onclick="openStock(event, 'outstock')">Outstock</button>
+    <button class="tablinks" onclick="openStock(event, 'metal-instock')">Metal Instock</button>
+    <button class="tablinks" onclick="openStock(event, 'metal-outstock')">Metal Outstock</button>
+{% endblock navbar_items %}
 
+{% block body %}
     <!-- Tab content -->
     {% include "stockmanagement/stock_table.html" with table_id="instock" table_title="Instock" stocks=instock supplier=True %}
     {% include "stockmanagement/stock_table.html" with table_id="outstock" table_title="Outstock" stocks=outstock supplier=False %}
