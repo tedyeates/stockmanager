@@ -11,6 +11,13 @@ function openStock(event, stockName) {
     // Show the current tab, and add an "active" class to the button that opened the tab
     $("#" + stockName).show();
     $(event.currentTarget).addClass("active");
+
+    if(stockName == "instock"){
+        $("#id_stock-is_instock").val("True");
+    }
+    else {
+        $("#id_stock-is_instock").val("False");
+    }
 } 
 
 $("#default-open").trigger("click");

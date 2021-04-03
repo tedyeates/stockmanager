@@ -1,10 +1,12 @@
-from django.shortcuts import render
-from django.views.generic import ListView
+from django.shortcuts import render, redirect
+from django.views.generic import ListView, View
 from django.db.models import Count, F, ExpressionWrapper, DecimalField
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 
 from stockmanagement.models import Stock, Item
+from stockmanagement.forms import StockForm, ItemForm, GroupForm
 
 class StockDisplay(LoginRequiredMixin, ListView):
     context_object_name = 'stock'
@@ -13,26 +15,40 @@ class StockDisplay(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Adds total field which is quantity x price and preloads items and groups
         stocks = Stock.objects.annotate(total_price=ExpressionWrapper(
                                                     F('quantity') * F('price'), 
-                                                    output_field=DecimalField())).select_related('item', 'item__group')
+                                                    output_field=DecimalField())).order_by('-date').select_related('item', 'item__group')
 
+        # Forms for modal popup
+        context['group_form'] = GroupForm
+        context['item_form'] = ItemForm
+        context['stock_form'] = StockForm
 
-        context['metal_instock'] = []
-        context['metal_outstock'] = []
         context['instock'] = []
         context['outstock'] = []
         for stock in stocks:
-            if stock.is_instock and stock.is_metalstock:
-                context['metal_instock'].append(stock)
-            elif stock.is_instock:
+            if stock.is_instock:
                 context['instock'].append(stock)
-            elif stock.is_metalstock:
-                context['metal_outstock'].append(stock)
             else:
                 context['outstock'].append(stock)
-        
-        print(context['outstock'])
-        return context
-    
 
+        return context
+
+class AddData(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        # if self.request.is_ajax():
+        post = request.POST.copy()
+        form_name = post.pop("form-name")[0]
+        form = None
+        if form_name == "add-group":
+            form = GroupForm(post)
+        elif form_name == "add-item":
+            form = ItemForm(post)
+        else:
+            form = StockForm(post)
+
+        if form.is_valid():
+            form.save()
+        
+        return redirect('stockmanagement:stock_display')

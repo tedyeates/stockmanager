@@ -9,7 +9,7 @@ DATA_LOC = dirname(dirname(__file__)) + "/static/stockmanagement/data/"
 
 
 def load_stock_data():
-    load_excel("1-INSTOCK.xlsx", is_instock=True, is_metalstock=False,
+    load_excel("1-INSTOCK.xlsx", is_instock=True,
                 itemsheet="TABLEITEM", stocksheet="INSTOCK")
 
 
@@ -19,7 +19,7 @@ def load_excel(file_name, **kwargs):
     stock_sheet = workbook[kwargs.pop("stocksheet")]
     load_groups(item_sheet)
     load_items(item_sheet)
-    load_stock(stock_sheet, kwargs.pop("is_instock"), kwargs.pop("is_metalstock"))
+    load_stock(stock_sheet, kwargs.pop("is_instock"))
 
 def load_groups(item_sheet):
     GROUP_NAME_COL = "L"
@@ -28,7 +28,7 @@ def load_groups(item_sheet):
     row_num = 3
     while True:
         group_name = item_sheet[GROUP_NAME_COL + str(row_num)].value
-        if group_name:
+        if group_name == None:
             break
 
         group_desc = item_sheet[GROUP_DESC_COL + str(row_num)].value
@@ -60,7 +60,7 @@ def load_items(item_sheet):
             try:
                 group = Group.objects.get(name=item_group)
             except ObjectDoesNotExist:
-                print("[WARN] Group " + str(item_group) + " for Item " + item_code + " does not exist, excluding group")
+                # print("[WARN] Group " + str(item_group) + " for Item " + item_code + " does not exist, excluding group")
                 group = None
 
         else:
@@ -72,7 +72,7 @@ def load_items(item_sheet):
         row_num += 1
 
 
-def load_stock(stock_sheet, is_instock, is_metalstock):
+def load_stock(stock_sheet, is_instock):
     DATE_COL = "C"
     IV_COL = "D"
     PO_COL = "E"
@@ -103,7 +103,6 @@ def load_stock(stock_sheet, is_instock, is_metalstock):
         try:
             item = Item.objects.get(code=stock_item)  # TODO: cache it
 
-            print(item.code)
 
             if isinstance(stock_price, str):
                 stock_price.replace(" ", "")
@@ -111,7 +110,6 @@ def load_stock(stock_sheet, is_instock, is_metalstock):
             if isinstance(stock_quantity, str):
                 stock_quantity.replace(" ", "")
 
-            print(stock_price)
             Stock.objects.get_or_create(invoice_id=stock_iv, 
                                         defaults={"date": stock_date,
                                                   "purchase_order_number": stock_po,
@@ -120,10 +118,9 @@ def load_stock(stock_sheet, is_instock, is_metalstock):
                                                   "item": item,
                                                   "quantity": stock_quantity,
                                                   "price": stock_price,
-                                                  "is_instock": is_instock,
-                                                  "is_metalstock": is_metalstock})
+                                                  "is_instock": is_instock})
         except ObjectDoesNotExist:
-            print("[CRIT] No Matching Item " + item.code + " Stock not added to database")
+            pass
+            # print("[CRIT] No Matching Item " + item.code + " Stock not added to database")
 
-        print("\n\n")
         row_num += 1

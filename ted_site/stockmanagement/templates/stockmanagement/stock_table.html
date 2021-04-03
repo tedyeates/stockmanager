@@ -1,4 +1,4 @@
-<div id="{{table_id}}" class="tabcontent">
+<div id="{{table_id}}" class="tabcontent table-responsive">
     <h3>{{table_title}}</h3>
     <br>
     <table class="table table-bordered table-striped" height="100em">
@@ -25,13 +25,13 @@
         <tbody id="{{table_id}}-table">
             {% for stock in stocks %}
                 <tr>
-                    <td>{{stock.date}}</td>
+                    <td value="{{stock.date|date:"Y-m-d"}}">{{stock.date}}</td>
                     <td scope="row">{{stock.invoice_id}}</td>
                     <td>{{stock.purchase_order_number}}</td>
                     <td>{{stock.pc_job}}</td>
                     <td>{{stock.supplier}}</td>
                     <td>{{stock.item.code}}</td>
-                    <td>{{stock.item.description}}</td>
+                    <td>{{stock.item.name}} - {{stock.item.description}}</td>
                     <td>{{stock.item.group.name}}</td>
                     <td>{{stock.quantity}}</td>
                     <td>{{stock.price}}</td>
@@ -43,7 +43,6 @@
     <script>
         $(function(){
             $(".{{table_id}}-search").on("keyup", function() {
-                console.log("hello");
                 if($(this).val().toLowerCase() !== ""){
                     $(this).parent().addClass("searched");
                 } else {

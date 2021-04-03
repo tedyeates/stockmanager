@@ -26,7 +26,7 @@ SECRET_KEY = '*#305hpb*cwpr@*t!)e)0sk8+$lmz03l+*#&x(1qcupl0uq*4&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['pcelemacstockmanager.ap-southeast-1.elasticbeanstalk.com']
+ALLOWED_HOSTS = ['PCElemacStockManager.ap-southeast-1.elasticbeanstalk.com', '127.0.0.1']
 
 
 # Application definition
@@ -41,8 +41,11 @@ INSTALLED_APPS = [
     'bootstrap4',
     'stockmanagement',
     'ted_site',
-    'django_extensions'
+    'django_extensions',
+    'crispy_forms',
 ]
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

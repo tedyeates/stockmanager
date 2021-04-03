@@ -11,16 +11,19 @@
 {% block navbar_items %}
     <button class="tablinks" onclick="openStock(event, 'instock')" id="default-open">Instock</button>
     <button class="tablinks" onclick="openStock(event, 'outstock')">Outstock</button>
-    <button class="tablinks" onclick="openStock(event, 'metal-instock')">Metal Instock</button>
-    <button class="tablinks" onclick="openStock(event, 'metal-outstock')">Metal Outstock</button>
+    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-group">Add Group</button>
+    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-item">Add Item</button>
+    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-stock">Add Stock</button>
 {% endblock navbar_items %}
 
 {% block body %}
     <!-- Tab content -->
     {% include "stockmanagement/stock_table.html" with table_id="instock" table_title="Instock" stocks=instock supplier=True %}
     {% include "stockmanagement/stock_table.html" with table_id="outstock" table_title="Outstock" stocks=outstock supplier=False %}
-    {% include "stockmanagement/stock_table.html" with table_id="metal-instock" table_title="Metal Instock" stocks=metal_instock supplier=True %}
-    {% include "stockmanagement/stock_table.html" with table_id="metal-outstock" table_title="Metal Outstock" stocks=metal_outstock supplier=False %}
+    
+    {% include "stockmanagement/update_data.html" with modal_id="add-group" form=group_form title="Add Group" form_type="add-data" %}
+    {% include "stockmanagement/update_data.html" with modal_id="add-item" form=item_form title="Add Item" form_type="add-data" %}
+    {% include "stockmanagement/update_data.html" with modal_id="add-stock" form=stock_form title="Add Stock" form_type="add-data" %}
 {% endblock body %}
 {% block footer %}
     <script src="{% static 'stockmanagement/js/tab_toggle.js' %}"></script>
