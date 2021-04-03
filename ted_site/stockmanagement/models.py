@@ -19,9 +19,19 @@ class Group(models.Model):
 
 
 class Item(models.Model):
+    BAR = 'BA'
+    SHEET = 'SH'
+    OTHER = 'OT'
+    ITEM_TYPES = [
+        (BAR, 'Bar'),
+        (SHEET, 'Sheet'),
+        (OTHER, 'Other'),
+    ]
+
     code = models.CharField(_("Item Code"), max_length=50)  # Glass 20x20 is GL2020
     name = models.CharField(_("Item Name"), max_length=50, null=True)
     description = models.CharField(_("Item Description"), blank=True, max_length=200)
+    item_type = models.CharField(_("Type of material"), choices=ITEM_TYPES, max_length=50, default=OTHER)
     size = models.CharField(_("Item Size"), max_length=50)  # 20x20
     brand = models.CharField(_("Item Brand"), max_length=50, null=True)
     unit = models.CharField(_("Item Unit"), max_length=50, null=True)
@@ -34,8 +44,6 @@ class Item(models.Model):
     def __str__(self):
         return str(self.code) + " " + str(self.name)
 
-    # def get_absolute_url(self):
-    #     return reverse("Item_detail", kwargs={"pk": self.pk})
 
     def save(self, *args, **kwargs):
         self.code = self.name[:2].upper() + self.size
@@ -59,7 +67,7 @@ class Stock(models.Model):
         verbose_name_plural = _("Stocks")
 
     def __str__(self):
-        return str(self.item.name) + " " + str(quantity)
+        return str(self.item.name) + " " + str(self.quantity)
 
     # def get_absolute_url(self):
     #     return reverse("Stock_detail", kwargs={"pk": self.pk})

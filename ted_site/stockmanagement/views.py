@@ -5,9 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 
-from stockmanagement.models import Stock, Item
+from stockmanagement.models import Stock, Item, Group
 from stockmanagement.forms import StockForm, ItemForm, GroupForm
-
 class StockDisplay(LoginRequiredMixin, ListView):
     context_object_name = 'stock'
     template_name='stockmanagement/stock_display.html'
@@ -18,8 +17,9 @@ class StockDisplay(LoginRequiredMixin, ListView):
         # Adds total field which is quantity x price and preloads items and groups
         stocks = Stock.objects.annotate(total_price=ExpressionWrapper(
                                                     F('quantity') * F('price'), 
-                                                    output_field=DecimalField())).order_by('-date').select_related('item', 'item__group')
-
+                                                    output_field=DecimalField())
+                                        ).order_by('-date').select_related('item', 'item__group')
+        print(stocks)
         # Forms for modal popup
         context['group_form'] = GroupForm
         context['item_form'] = ItemForm
@@ -27,6 +27,11 @@ class StockDisplay(LoginRequiredMixin, ListView):
 
         context['instock'] = []
         context['outstock'] = []
+        context['groups'] = Group.objects.all().values('name', 'description')
+        context['items'] = Item.objects.annotate(
+                                            group_name=F("group__name")
+                                        ).all().values( "code", "name", "description", "item_type",
+                                                        "size", "brand", "unit", "group_name")
         for stock in stocks:
             if stock.is_instock:
                 context['instock'].append(stock)

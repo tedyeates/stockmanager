@@ -22,21 +22,21 @@
             {% include "stockmanagement/search_tooltip.html" with column_name="Price" table_id=table_id column_id=9 %}
             {% include "stockmanagement/search_tooltip.html" with column_name="Total Price" table_id=table_id column_id=10 %}
         <thead>
-        <tbody id="{{table_id}}-table">
+        <tbody id="{{table_id}}-table" class="stock-body">
             {% for stock in stocks %}
-                <tr>
-                    <td value="{{stock.date|date:"Y-m-d"}}">{{stock.date}}</td>
-                    <td scope="row">{{stock.invoice_id}}</td>
-                    <td>{{stock.purchase_order_number}}</td>
-                    <td>{{stock.pc_job}}</td>
-                    <td>{{stock.supplier}}</td>
-                    <td>{{stock.item.code}}</td>
-                    <td>{{stock.item.name}} - {{stock.item.description}}</td>
-                    <td>{{stock.item.group.name}}</td>
-                    <td>{{stock.quantity}}</td>
-                    <td>{{stock.price}}</td>
-                    <td>{{stock.total_price}}</td>
-                </tr>
+            <tr>
+                <td value="{{stock.date|date:"Y-m-d"}}">{{stock.date}}</td>
+                <td scope="row">{{stock.invoice_id}}</td>
+                <td>{{stock.purchase_order_number}}</td>
+                <td>{{stock.pc_job}}</td>
+                <td>{{stock.supplier}}</td>
+                <td>{{stock.item.code}}</td>
+                <td>{{stock.item.name}} - {{stock.item.description}}</td>
+                <td>{{stock.item.group.name}}</td>
+                <td>{{stock.quantity}}</td>
+                <td>{{stock.price}}</td>
+                <td>{{stock.total_price}}</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
