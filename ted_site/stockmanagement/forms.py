@@ -3,19 +3,19 @@ from django.forms import ModelForm, HiddenInput, BooleanField, ModelChoiceField
 from stockmanagement.models import Stock, Item, Group
 
 class GroupForm(ModelForm):
-    prefix = 'group'
+    prefix = 'groups'
     class Meta:
         model = Group
         fields = ("name", "description")
 
 class ItemForm(ModelForm):
-    prefix = 'item'
+    prefix = 'items'
     class Meta:
         model = Item
         fields = ("name", "description", "item_type", "size", "brand", "unit", "group")
 
 class StockForm(ModelForm):
-    prefix = 'stock'
+    prefix = 'stocks'
     is_instock = BooleanField(widget=HiddenInput(), initial=True, required=False)
     class Meta:
         model = Stock

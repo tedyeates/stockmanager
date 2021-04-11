@@ -27,11 +27,11 @@ class StockDisplay(LoginRequiredMixin, ListView):
 
         context['instock'] = []
         context['outstock'] = []
-        context['groups'] = Group.objects.all().values('name', 'description')
-        context['items'] = Item.objects.annotate(
+        context['groups'] = Group.objects.order_by("id").values()
+        context['items'] = Item.objects.order_by("id").annotate(
                                             group_name=F("group__name")
-                                        ).all().values( "code", "name", "description", "item_type",
-                                                        "size", "brand", "unit", "group_name")
+                                        ).values()
+
         for stock in stocks:
             if stock.is_instock:
                 context['instock'].append(stock)
@@ -41,19 +41,36 @@ class StockDisplay(LoginRequiredMixin, ListView):
         return context
 
 class AddData(LoginRequiredMixin, View):
+    EDIT_MODELS = (
+        ("groups-id", Group),
+        ("items-id", Item),
+        ("stocks-id", Stock),
+    )
+
+    def update_model(self, post):
+        for model_id, model_class in self.EDIT_MODELS:
+            if model_id in post and post[model_id]:
+                return model_class.objects.get(id=post[model_id])
+        return None
+
+
     def post(self, request, *args, **kwargs):
         # if self.request.is_ajax():
         post = request.POST.copy()
         form_name = post.pop("form-name")[0]
         form = None
-        if form_name == "add-group":
-            form = GroupForm(post)
-        elif form_name == "add-item":
-            form = ItemForm(post)
+        instance = self.update_model(post)
+        print(instance)
+        if form_name == "add-groups":
+            form = GroupForm(post, instance=instance)
+        elif form_name == "add-items":
+            form = ItemForm(post, instance=instance)
         else:
-            form = StockForm(post)
-
+            form = StockForm(post, instance=instance)
+        print(form.is_valid())
         if form.is_valid():
             form.save()
-        
+        else:
+            print(form.errors)
+
         return redirect('stockmanagement:stock_display')

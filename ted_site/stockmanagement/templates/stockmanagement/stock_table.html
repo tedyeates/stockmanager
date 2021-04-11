@@ -15,27 +15,31 @@
                 {% include "stockmanagement/search_tooltip.html" with column_name="Customer" table_id=table_id column_id=4 %}
             {% endif %}
 
-            {% include "stockmanagement/search_tooltip.html" with column_name="Item" table_id=table_id column_id=5 %}
-            {% include "stockmanagement/search_tooltip.html" with column_name="Item Description" table_id=table_id column_id=6 %}
-            {% include "stockmanagement/search_tooltip.html" with column_name="Group" table_id=table_id column_id=7 %}
-            {% include "stockmanagement/search_tooltip.html" with column_name="Quantity" table_id=table_id column_id=8 %}
-            {% include "stockmanagement/search_tooltip.html" with column_name="Price" table_id=table_id column_id=9 %}
-            {% include "stockmanagement/search_tooltip.html" with column_name="Total Price" table_id=table_id column_id=10 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Item Id" table_id=table_id column_id=5 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Item Code" table_id=table_id column_id=6 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Item Type" table_id=table_id column_id=7 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Item Description" table_id=table_id column_id=8 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Group" table_id=table_id column_id=9 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Quantity" table_id=table_id column_id=10 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Price" table_id=table_id column_id=11 %}
+            {% include "stockmanagement/search_tooltip.html" with column_name="Total Price" table_id=table_id column_id=12 %}
         <thead>
         <tbody id="{{table_id}}-table" class="stock-body">
             {% for stock in stocks %}
             <tr>
                 <td value="{{stock.date|date:"Y-m-d"}}">{{stock.date}}</td>
-                <td scope="row">{{stock.invoice_id}}</td>
-                <td>{{stock.purchase_order_number}}</td>
-                <td>{{stock.pc_job}}</td>
-                <td>{{stock.supplier}}</td>
+                <td name="invoice_id" scope="row">{{stock.invoice_id}}</td>
+                <td name="purchase_order_number">{{stock.purchase_order_number}}</td>
+                <td name="pc_job">{{stock.pc_job}}</td>
+                <td name="supplier">{{stock.supplier}}</td>
+                <td name="item">{{stock.item.id}}</td>
                 <td>{{stock.item.code}}</td>
+                <td>{{stock.item.item_type}}</td>
                 <td>{{stock.item.name}} - {{stock.item.description}}</td>
                 <td>{{stock.item.group.name}}</td>
-                <td>{{stock.quantity}}</td>
-                <td>{{stock.price}}</td>
-                <td>{{stock.total_price}}</td>
+                <td name="quantity">{{stock.quantity}}</td>
+                <td name="price">{{stock.price}}</td>
+                <td name="total_price">{{stock.total_price}}</td>
             </tr>
             {% endfor %}
         </tbody>

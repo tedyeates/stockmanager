@@ -9,12 +9,12 @@
             {% include "stockmanagement/search_tooltip.html" with column_name=verbose_name table_id=table_id column_id=forloop.counter0 %}
             {% endwith %}
             {% endfor %}
-        <thead>
-        <tbody id="{{table_id}}-table" class="stock-body">
+        </thead>
+        <tbody id="{{table_id}}-table" class="data-body">
             {% for data_item in data %}
             <tr>
-                {% for _, value in data_item.items %}
-                <td>{{value}}</td>
+                {% for key, value in data_item.items %}
+                <td name="{{key}}">{{value|default_if_none:""}}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

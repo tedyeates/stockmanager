@@ -19,9 +19,9 @@ class Group(models.Model):
 
 
 class Item(models.Model):
-    BAR = 'BA'
-    SHEET = 'SH'
-    OTHER = 'OT'
+    BAR = 'BAR'
+    SHEET = 'SHEET'
+    OTHER = 'OTHER'
     ITEM_TYPES = [
         (BAR, 'Bar'),
         (SHEET, 'Sheet'),
@@ -35,7 +35,7 @@ class Item(models.Model):
     size = models.CharField(_("Item Size"), max_length=50)  # 20x20
     brand = models.CharField(_("Item Brand"), max_length=50, null=True)
     unit = models.CharField(_("Item Unit"), max_length=50, null=True)
-    group = models.ForeignKey(Group, verbose_name=_("Group Belonged To"), null=True, on_delete=models.SET_NULL)
+    group = models.ForeignKey(Group, verbose_name=_("Group"), null=True, on_delete=models.SET_NULL)
 
     class Meta:
         verbose_name = _("Item")

@@ -9,13 +9,13 @@
 {% endblock title %}
 <!-- Tab links -->
 {% block navbar_items %}
-    <button class="tablinks" onclick="openStock(event, 'instock')" id="default-open">Instock</button>
+    <button class="tablinks active" onclick="openStock(event, 'instock')" id="default-open">Instock</button>
     <button class="tablinks" onclick="openStock(event, 'outstock')">Outstock</button>
     <button class="tablinks" onclick="openStock(event, 'groups')">Groups</button>
     <button class="tablinks" onclick="openStock(event, 'items')">Items</button>
-    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-group">Add Group</button>
-    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-item">Add Item</button>
-    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-stock">Add Stock</button>
+    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-groups">Add Group</button>
+    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-items">Add Item</button>
+    <button type="button" class="d-flex" data-bs-toggle="modal" data-bs-target="#add-stocks">Add Stock</button>
 {% endblock navbar_items %}
 
 {% block body %}
@@ -25,14 +25,14 @@
     {% include "stockmanagement/data_table.html" with table_id="groups" table_title="Groups" data=groups %}
     {% include "stockmanagement/data_table.html" with table_id="items" table_title="Items" data=items %}
     
-    {% include "stockmanagement/update_data.html" with modal_id="add-group" form=group_form title="Add Group" form_type="stock_add" %}
-    {% include "stockmanagement/update_data.html" with modal_id="add-item" form=item_form title="Add Item" form_type="stock_add" %}
-    {% include "stockmanagement/update_data.html" with modal_id="add-stock" form=stock_form title="Add Stock" form_type="stock_add" %}
-
+    {% include "stockmanagement/update_data.html" with modal_id="add-groups" form=group_form title="Add Group" table_id="groups" %}
+    {% include "stockmanagement/update_data.html" with modal_id="add-items" form=item_form title="Add Item" table_id="items" %}
+    {% include "stockmanagement/update_data.html" with modal_id="add-stocks" form=stock_form title="Add Stock" table_id="stocks" %}
     {% comment %} {% include "stockmanagement/update_data.html" with modal_id="update-group" form=group_form title="Update Group" form_type="stock_update" %}
     {% include "stockmanagement/update_data.html" with modal_id="update-item" form=item_form title="Update Item" form_type="stock_update" %} {% endcomment %}
 {% endblock body %}
 {% block footer %}
     <script src="{% static 'stockmanagement/js/tab_toggle.js' %}"></script>
     <script src="{% static 'stockmanagement/js/column_search.js' %}"></script>
+    <script src="{% static 'stockmanagement/js/row_update.js' %}"></script>
 {% endblock footer %}
