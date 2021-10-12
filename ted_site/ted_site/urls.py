@@ -22,6 +22,6 @@ urlpatterns = [
     path('', include(('stockmanagement.urls', 'stockmanagement'), namespace="stockmanagement")),
     path('admin/', admin.site.urls),
     path('accounts/login/', auth_views.LoginView.as_view(authentication_form=CustomAuthForm), name='login'),
-    path('accounts/login/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
 ]

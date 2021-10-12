@@ -1,76 +1,56 @@
-from django.shortcuts import render, redirect
-from django.views.generic import ListView, View
-from django.db.models import Count, F, ExpressionWrapper, DecimalField
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from rest_framework import viewsets, views
 
 from stockmanagement.models import Stock, Item, Group
 from stockmanagement.forms import StockForm, ItemForm, GroupForm
-class StockDisplay(LoginRequiredMixin, ListView):
-    context_object_name = 'stock'
-    template_name='stockmanagement/stock_display.html'
+from .serializers import GroupSerializer, ItemSerializer, StockSerializer
+from stockmanagement.util.custom_viewsets import FormDataMixin
+
+class GroupViewSet(FormDataMixin):
+    queryset = Group.objects.all().order_by('-modified')
+    serializer_class = GroupSerializer
+    model = Group
+    exclude = ['item', 'modified']
+
+    def get_queryset(self):
+        return Group.objects.all().order_by('-modified')
+
+
+class ItemViewSet(FormDataMixin,):
+    queryset = Item.objects.all().order_by('-modified')
+    serializer_class = ItemSerializer
     model = Item
+    exclude = ['stock', 'modified', 'code']
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Adds total field which is quantity x price and preloads items and groups
-        stocks = Stock.objects.annotate(total_price=ExpressionWrapper(
-                                                    F('quantity') * F('price'), 
-                                                    output_field=DecimalField())
-                                        ).order_by('-date').select_related('item', 'item__group')
-        print(stocks)
-        # Forms for modal popup
-        context['group_form'] = GroupForm
-        context['item_form'] = ItemForm
-        context['stock_form'] = StockForm
+    def get_queryset(self):
+        return Item.objects.all().order_by('-modified')
 
-        context['instock'] = []
-        context['outstock'] = []
-        context['groups'] = Group.objects.order_by("id").values()
-        context['items'] = Item.objects.order_by("id").annotate(
-                                            group_name=F("group__name")
-                                        ).values()
-
-        for stock in stocks:
-            if stock.is_instock:
-                context['instock'].append(stock)
-            else:
-                context['outstock'].append(stock)
-
-        return context
-
-class AddData(LoginRequiredMixin, View):
-    EDIT_MODELS = (
-        ("groups-id", Group),
-        ("items-id", Item),
-        ("stocks-id", Stock),
-    )
-
-    def update_model(self, post):
-        for model_id, model_class in self.EDIT_MODELS:
-            if model_id in post and post[model_id]:
-                return model_class.objects.get(id=post[model_id])
-        return None
+    def get_related_data(self):
+        return [('group', Group.objects.all(), GroupSerializer)]
 
 
-    def post(self, request, *args, **kwargs):
-        # if self.request.is_ajax():
-        post = request.POST.copy()
-        form_name = post.pop("form-name")[0]
-        form = None
-        instance = self.update_model(post)
-        print(instance)
-        if form_name == "add-groups":
-            form = GroupForm(post, instance=instance)
-        elif form_name == "add-items":
-            form = ItemForm(post, instance=instance)
-        else:
-            form = StockForm(post, instance=instance)
-        print(form.is_valid())
-        if form.is_valid():
-            form.save()
-        else:
-            print(form.errors)
+class InstockViewSet(FormDataMixin):
+    queryset = Stock.objects.filter(is_instock=True).order_by('-modified')
+    serializer_class = StockSerializer
+    model = Stock
+    can_cut = True
+    exclude = ['date', 'modified', 'is_instock', 'size']
 
-        return redirect('stockmanagement:stock_display')
+    def get_queryset(self):
+        return Stock.objects.filter(is_instock=True).order_by('-modified')
+
+    def get_related_data(self):
+        return [('item', Item.objects.all(), ItemSerializer)]
+
+
+class OutstockViewSet(FormDataMixin):
+    queryset = Stock.objects.filter(is_instock=False).order_by('-modified')
+    serializer_class = StockSerializer
+    model = Stock
+    exclude = ['date', 'modified', 'is_instock', 'size']
+    related_data = [('item', Item.objects.all(), ItemSerializer)]
+
+    def get_queryset(self):
+        return Stock.objects.filter(is_instock=False).order_by('-modified')
+
+    def get_related_data(self):
+        return [('item', Item.objects.all(), ItemSerializer)]

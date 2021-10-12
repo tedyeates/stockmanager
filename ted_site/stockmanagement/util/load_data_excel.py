@@ -110,7 +110,7 @@ def load_stock(stock_sheet, is_instock):
             if isinstance(stock_quantity, str):
                 stock_quantity.replace(" ", "")
 
-            Stock.objects.get_or_create(invoice_id=stock_iv, 
+            Stock.objects.get_or_create(invoice_number=stock_iv, 
                                         defaults={"date": stock_date,
                                                   "purchase_order_number": stock_po,
                                                   "pc_job": stock_pc,

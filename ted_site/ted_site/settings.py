@@ -26,7 +26,8 @@ SECRET_KEY = '*#305hpb*cwpr@*t!)e)0sk8+$lmz03l+*#&x(1qcupl0uq*4&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['PCElemacStockManager.ap-southeast-1.elasticbeanstalk.com', '127.0.0.1']
+# ALLOWED_HOSTS = ['PCElemacStockManager.ap-southeast-1.elasticbeanstalk.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,16 +39,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'bootstrap4',
-    'stockmanagement',
-    'ted_site',
     'django_extensions',
     'crispy_forms',
+    'rest_framework',
+    'corsheaders',
+
+    'stockmanagement',
+    'ted_site',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -55,9 +61,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'ted_site.urls'
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+# ]
 
 TEMPLATES = [
     {
