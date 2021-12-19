@@ -58,13 +58,6 @@ export class Popup extends Component<PopupProps, PopupState> {
         })
     }
 
-    // readSize(rowData: DataType): number[] {
-    //     console.log(rowData)
-    //     if("size" in rowData) {
-
-    //     }
-    // }
-    
     /**
      * Callback for click of table row. 
      * Opens popup and stores column data from row
@@ -101,7 +94,7 @@ export class Popup extends Component<PopupProps, PopupState> {
         // Override current data with new data
         const id = popupData?.id ?? -1
         if(id) delete popupData.id
-        console.log(popupData)
+
         this.checkUpdate(name, popupData, id)
             .then((res) => {
                 this.props.getData(name)
@@ -125,10 +118,8 @@ export class Popup extends Component<PopupProps, PopupState> {
      * @param {String} inputType If inputType is a number convert to float
      */
     changeField = (fieldName: string, inputType: string, value: any=null): void => {
-        console.log(value)
-
         value = inputType === 'number' && value !== '' ? parseFloat(value) : value
-        console.log(value)
+        
         // Arrow function ensures this refers to Popup when called from Form
         this.setState(({rowData}) => ({
             rowData: {

@@ -12,23 +12,21 @@ type TabProps = {
     onClick: () => void
 }
 
-class Tab extends Component<TabProps> {
-    render() {
-        return (
-            <li className={`hover:bg-blue-800 ${
-                this.props.active === this.props.name ? 
-                    'bg-blue-900' : 
-                    'bg-blue-700'
-            }`}>
-                <button
-                    className='tab'
-                    onClick={this.props.onClick}
-                >
-                    {title(this.props.name)}
-                </button>
-            </li>
-        )
-    }
+function Tab({name, active, onClick}:TabProps) {
+    return (
+        <li className={`hover:bg-blue-800 ${
+            active === name ? 
+                'bg-blue-900' : 
+                'bg-blue-700'
+        }`}>
+            <button
+                className='tab'
+                onClick={onClick}
+            >
+                {title(name)}
+            </button>
+        </li>
+    )
 }
 
 
@@ -49,38 +47,38 @@ function CreateTab ({onClick}: {onClick: () => void}) {
 type NavbarProps = {
     tabs: string[]
     active: string
+    showCreateTab: boolean
     onClick: (name: string) => void
     openPopup: () => void
 }
 
-class Navbar extends Component<NavbarProps> {
-    render() {
-        return (
-            <TailwindNavbar
-                brand="PCElemac"
-                className="bg-blue-700 py-3 lg:py-0 sm:px-0 navbar"
-            >
-                <nav>
-                    <ul className="items-center justify-between pt-4 text-base lg:flex lg:pt-0">
-                        <CreateTab onClick={this.props.openPopup} />
-                        {this.props.tabs.map((tab: string, index: number) => {
-                            return(
-                                <Tab
-                                    key={index}
-                                    name={tab}
-                                    active={this.props.active}
-                                    onClick={() => this.props.onClick(tab)}
-                                />
-                            )
-                        })}
-                        <li className="hover:bg-blue-800">
-                            <a href={LOGOUT_URL} className="tab">Logout</a>
-                        </li>
-                    </ul>
-                </nav>
-            </TailwindNavbar>
-        )
-    }
+function Navbar(props: NavbarProps) {
+    console.log(props.showCreateTab)
+    return (
+        <TailwindNavbar
+            brand="PCElemac"
+            className="bg-blue-700 py-3 lg:py-0 sm:px-0 navbar"
+        >
+            <nav>
+                <ul className="items-center justify-between pt-4 text-base lg:flex lg:pt-0">
+                    {props.showCreateTab ? <CreateTab onClick={props.openPopup} /> : <></>}
+                    {props.tabs.map((tab: string, index: number) => {
+                        return(
+                            <Tab
+                                key={index}
+                                name={tab}
+                                active={props.active}
+                                onClick={() => props.onClick(tab)}
+                            />
+                        )
+                    })}
+                    <li className="hover:bg-blue-800">
+                        <a href={LOGOUT_URL} className="tab">Logout</a>
+                    </li>
+                </ul>
+            </nav>
+        </TailwindNavbar>
+    )
 }
 
 export default Navbar

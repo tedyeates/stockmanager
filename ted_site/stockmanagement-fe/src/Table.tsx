@@ -169,7 +169,26 @@ class Table extends Component<TableProps, TableState> {
         )
     }
 
-    idToName(fieldName: string, value: any) {
+
+    /**
+     * Check if field is a list and if so reduces it to a diplayable string
+     * @param value Field value or array value
+     * @returns Display value
+     */
+    checkArray(value:any){
+        if(Array.isArray(value))
+            return value.reduce((acc, val) => `${acc} x ${val}`)
+        return value
+    }
+
+
+    /**
+     * If foreign key field, lookup id and display name of object instead of id
+     * @param fieldName For checking if data is normal field data or related field data
+     * @param value Field value or foreign key id
+     * @returns Display value
+     */
+    idToName(fieldName: string, value: any): any {
         if(fieldName in this.props.data) {
             const relatedData = this.props.data[fieldName][value]
             return relatedData?.name
@@ -178,25 +197,23 @@ class Table extends Component<TableProps, TableState> {
     }
 
 
-    renderCell(key: string, index:number, value:any) {
+    renderCell(key: string, index:number, value:any): ReactElement {
         return (
             <td 
                 data-name={key}
                 className='px-8 py-4'
                 key={`${key}-${index}`}
             >
-                {this.idToName(key, value)}
+                {this.checkArray(this.idToName(key, value))}
             </td>
         )
     }
 
     renderBody(): ReactElement[]{
-
         return this.filterRows().map((data, index) => {
             return (
                 <tr key={index} onClick={(): void => this.props.rowClick(data)}>
                     {Object.entries(data).map(([key, value]) => {
-
                         return this.renderCell(key, index, value)
                     })}
                 </tr>    
