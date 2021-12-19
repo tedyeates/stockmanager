@@ -13,6 +13,7 @@ type AppState = {
     data: FormDataType
     active: string
     rowData: DataType
+    hasLoaded: boolean
 }
 
 class App extends Component<{},AppState> {
@@ -26,6 +27,7 @@ class App extends Component<{},AppState> {
             },
             active: 'instock',
             rowData: {},
+            hasLoaded: false,
         }
     }
 
@@ -34,15 +36,22 @@ class App extends Component<{},AppState> {
     }
 
     getData = (name: string): void => {
+        this.setState({ hasLoaded: false })
         axios
             .get(`${API_URL}${name}/`)
             .then(res => {
-                console.log(res.data)
                 this.setState(() => ({
+                    hasLoaded: true,
                     data: res.data,
                     active: name,
                 }))
             })
+    }
+
+    isObjectEmpty(obj:DataType): boolean {
+        console.log(obj)
+        for(let _ in obj) return false
+        return true
     }
 
     render(){
@@ -53,6 +62,7 @@ class App extends Component<{},AppState> {
             'items',
         ]
         let popup:any = null
+        console.log(this.state.rowData)
         return (
             <>
                 <Popup
@@ -66,6 +76,7 @@ class App extends Component<{},AppState> {
                 <Navbar
                     tabs={tabs}
                     active={this.state.active}
+                    showCreateTab={this.state.hasLoaded}
                     onClick={(name: string) => {this.getData(name)}}
                     openPopup={() => popup.openPopup()}
                 />

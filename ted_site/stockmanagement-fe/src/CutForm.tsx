@@ -198,12 +198,9 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
     }
 
     getNewSizes(value: number, index: number, sizeIndex:number): SizeCutReturn {
-        console.log(this.state.sizes)
         const correctedLength = this.sizeLength()
         const sizeCorrectedSizes = this.state.sizes.map(size => size.slice(0, correctedLength))
-        console.log(sizeCorrectedSizes)
         let sizeCorrectedTotal = this.state.totalSize.slice(0, correctedLength)
-        console.log(sizeCorrectedTotal)
         const numberOfSizes:number =  sizeCorrectedSizes.length
         const roundedValue:number = this.roundDecimalPlaces(value, -1)
         const sizeRow:number[] = sizeCorrectedSizes[index]
@@ -285,7 +282,6 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
 
         this.props.onChange('size', 'number array', newSizes)
 
-        console.log(newSizes)
         this.setState({ 
             sizes: newSizes, 
             totalSize: newTotalSize,
@@ -321,7 +317,6 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
             return dividedSizes.map(row => row[colIndex])
         })
 
-        console.log(replaceSizes)
         this.props.onChange('size', 'number array', replaceSizes)
         this.setState({
             sizes: replaceSizes,
@@ -330,7 +325,6 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
     }
 
     generateCutInputsWrapper(): ReactElement {
-        console.log(this.state.sizes)
         return (
             <>
                 <Divider variant="middle" />

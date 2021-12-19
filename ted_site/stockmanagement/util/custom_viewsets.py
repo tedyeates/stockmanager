@@ -38,7 +38,7 @@ class FormDataMixin(viewsets.ModelViewSet):
 
         Args:
             data (dict): Contains user entered data to be turned into stock model(s)
-            pk (number, optional): if update include primary key of stock to update. Defaults to None.
+            pk (int, optional): if update include primary key of stock to update. Defaults to None.
 
         Returns:
             Response: 201 if successful and 400 if unsuccessful
@@ -58,10 +58,27 @@ class FormDataMixin(viewsets.ModelViewSet):
 
 
     def should_cut(self, data):
+        """Check if item is cuttable and has multiple sizes for the new items 
+
+        Args:
+            data (dict): Request data that should include size attribute
+        Returns:
+            bool: Whether requested item should be cut
+        """
         return self.can_cut and 'size' in data and isinstance(data['size'], list)
     
 
     def update(self, request, pk=None):
+        """Use custom save if item is cuttable and has been cut
+        If not update normally
+
+        Args:
+            request (dict): Data to be added to system, should contain size if user wants to cut item
+            pk (int, optional): Primary key of model to update. Defaults to None.
+
+        Returns:
+            Response: 201 if successful and 400 if not
+        """
         data = request.data.copy()
         if self.should_cut(data):
             return self.bar_cut(data, pk=pk)
@@ -71,7 +88,6 @@ class FormDataMixin(viewsets.ModelViewSet):
 
     def create(self, request):
         data = request.data.copy()
-        print(data)
         if self.should_cut(data):
             return self.bar_cut(data)
 
