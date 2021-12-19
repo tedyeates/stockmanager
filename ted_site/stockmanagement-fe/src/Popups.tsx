@@ -32,7 +32,6 @@ export class Popup extends Component<PopupProps, PopupState> {
 
     constructor(props: PopupProps) {
         super(props)
-
         this.state = {
             rowData: {},
             errors: {},
@@ -58,6 +57,13 @@ export class Popup extends Component<PopupProps, PopupState> {
             open: true,
         })
     }
+
+    // readSize(rowData: DataType): number[] {
+    //     console.log(rowData)
+    //     if("size" in rowData) {
+
+    //     }
+    // }
     
     /**
      * Callback for click of table row. 
@@ -92,12 +98,10 @@ export class Popup extends Component<PopupProps, PopupState> {
      * @param {String} name        Name of router endpoint for Model
      */
     createData(name: string, popupData: DataType): void{
-        console.log("create")
-        console.log(popupData)
         // Override current data with new data
         const id = popupData?.id ?? -1
         if(id) delete popupData.id
-
+        console.log(popupData)
         this.checkUpdate(name, popupData, id)
             .then((res) => {
                 this.props.getData(name)
@@ -107,7 +111,6 @@ export class Popup extends Component<PopupProps, PopupState> {
                 this.closePopup()
             })
             .catch((error) => {
-                console.log(error.response.data)
                 this.setState({
                     errors: error.response.data
                 })
@@ -122,8 +125,10 @@ export class Popup extends Component<PopupProps, PopupState> {
      * @param {String} inputType If inputType is a number convert to float
      */
     changeField = (fieldName: string, inputType: string, value: any=null): void => {
-        value = inputType === 'number' ? parseFloat(value) : value
-        
+        console.log(value)
+
+        value = inputType === 'number' && value !== '' ? parseFloat(value) : value
+        console.log(value)
         // Arrow function ensures this refers to Popup when called from Form
         this.setState(({rowData}) => ({
             rowData: {
@@ -131,6 +136,19 @@ export class Popup extends Component<PopupProps, PopupState> {
                 [fieldName]: value
             }
         }))
+    }
+
+    /**
+     * Checks if item type provided and returns currently selected item type if found
+     * @returns item type string which is OTHER/BAR/SHEET
+     */
+    getItemType(): string {
+        const item = this.props.data?.item
+        const itemId = this.state.rowData?.item
+        if (item && itemId) 
+           return item[itemId].item_type
+
+        return 'OTHER'
     }
 
     render() {
@@ -151,6 +169,7 @@ export class Popup extends Component<PopupProps, PopupState> {
                             <CutForm
                                 itemData={this.props.data.item} 
                                 rowData={this.state.rowData}
+                                itemType={this.getItemType()}
                                 onChange={this.changeField}
                                 errors={this.state.errors}
                             />

@@ -6,7 +6,7 @@ import { DataType, OnChangeType } from './util/types'
 import { Error } from './Forms'
 
 type CutFormSharedProps = {
-    onChange: (event: ChangeEvent<HTMLInputElement>, value:number) => void
+    onChange: (event: ChangeEvent<HTMLInputElement>, sizeIndex: number) => void
 }
 
 type CutFormProps = {
@@ -14,10 +14,11 @@ type CutFormProps = {
     rowData: DataType
     onChange: OnChangeType
     errors: DataType
+    itemType: string | undefined | null
 }
 
 type CutFormInputProps = CutFormSharedProps & {
-    value: number
+    value: number[]
     index: number
     type: string
     onUpdate: (event:MouseEvent<HTMLButtonElement>, updateSize: number) => void
@@ -25,7 +26,7 @@ type CutFormInputProps = CutFormSharedProps & {
 
 function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps): ReactElement {
     
-    function inputField(indexKey:string){
+    function inputField(indexKey:string, index: number){
         return (
             <input 
                 key={indexKey} 
@@ -34,17 +35,17 @@ function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps
                 step={0.01}
                 name="size"
                 className='form-input cut-input'
-                value={value}
-                onChange={(event) => onChange(event, value)}
+                value={value[index] || ''}
+                onChange={(event) => onChange(event, index)}
             />
         )
     }
-
+    
     function generateInputFields(){
-        let inputs:ReactElement[] = [inputField(index.toString())]
+        let inputs:ReactElement[] = [inputField(index.toString(), 0)]
         if (type === 'SHEET')
-            inputs.push(inputField(`${index.toString()}-2`))
-        
+            inputs.push(inputField(`${index.toString()}-2`, 1))
+
         return inputs
     }
     
@@ -54,11 +55,11 @@ function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps
                 Size
             </label>
             <div className="relative flex items-stretch">
-                <div>
+                <div className="inline-flex">
                     {generateInputFields()}
                 </div>
                 {type === 'BAR' || type === 'SHEET' ?
-                    <div className="inline-block">
+                    <div className="inline-flex">
                         <button className="cut-button" key={`plus-${index}`} onClick={event => onUpdate(event, 1)}>
                             <TiPlus/>
                         </button>
@@ -75,8 +76,9 @@ function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps
 }
 
 type CutFormState = {
-    sizes: number[]
-    totalSize: number
+    sizes: number[][]
+    sizeLength: number
+    totalSize: number[]
     lockedPair: {
         current: number
         previous: number
@@ -86,24 +88,34 @@ type CutFormState = {
 
 type LockedPairType = {current: number, previous: number}
 type SizeCutReturn = [
-    number[], 
-    number,
+    number[][], 
+    number[],
     LockedPairType
 ]
 
 export class CutForm extends Component<CutFormProps, CutFormState> {
     constructor(props: CutFormProps){
         super(props)
+        let sizeLength = this.sizeLength()
+
         this.state = {
-            sizes: [this.props.rowData['size']],
-            totalSize: this.props.rowData['size'],
+            sizes: [this.props.rowData['size']] ?? [[]],
+            sizeLength: sizeLength,
+            totalSize: this.props.rowData['size']  ?? [],
             lockedPair: {
                 current: -1,
                 previous: -1,
             },
             decimalPlaces: 2,
         }
-        console.log("Cutform " + this.props.rowData)
+    }
+
+
+    sizeLength(){
+        if((this.props.itemType ?? '') === 'SHEET')
+            return 2
+
+        return 1
     }
 
     /**
@@ -185,26 +197,50 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
         ) 
     }
 
-    getNewSizes(value: number, index: number): SizeCutReturn {
-        const numberOfSizes:number =  this.state.sizes.length
+    getNewSizes(value: number, index: number, sizeIndex:number): SizeCutReturn {
+        console.log(this.state.sizes)
+        const correctedLength = this.sizeLength()
+        const sizeCorrectedSizes = this.state.sizes.map(size => size.slice(0, correctedLength))
+        console.log(sizeCorrectedSizes)
+        let sizeCorrectedTotal = this.state.totalSize.slice(0, correctedLength)
+        console.log(sizeCorrectedTotal)
+        const numberOfSizes:number =  sizeCorrectedSizes.length
         const roundedValue:number = this.roundDecimalPlaces(value, -1)
+        const sizeRow:number[] = sizeCorrectedSizes[index]
+
+        const totalSizeColumn:number = sizeCorrectedTotal[sizeIndex]
+
+        if (numberOfSizes < 1) {
+            sizeCorrectedTotal[sizeIndex] = 0
+            return [sizeCorrectedSizes, sizeCorrectedTotal, {current: -1, previous: -1}]
+        }
         // 1 input just update size value
-        if (numberOfSizes < 2) return [[roundedValue], roundedValue, {current: -1, previous: -1}]
+        if (numberOfSizes < 2) {
+            let sizes = sizeCorrectedSizes
+            sizes[0][sizeIndex] = roundedValue 
+            sizeCorrectedTotal[sizeIndex] = roundedValue
+            return [sizes, sizeCorrectedTotal, {current: -1, previous: -1}]
+        }
+
         // If size too high and not a signal input don't update
-        if (roundedValue > this.state.totalSize) 
-            return [this.state.sizes, this.state.totalSize, this.state.lockedPair]
+        if (roundedValue > totalSizeColumn) 
+            return [sizeCorrectedSizes, sizeCorrectedTotal, this.state.lockedPair]
 
         // Only update locks if new input is being editted
         let newLockedPair:LockedPairType = this.getUpdatedLockedPair(index)
         
-        const currentValue:number = this.state.sizes[index]
+        const currentValue:number = sizeRow[sizeIndex]
         let totalChange:number = this.roundDecimalPlaces(currentValue - roundedValue, 0)
         let editableSizes:number = this.numberEditableSizes(newLockedPair)
 
-        let newSizes:number[] = this.state.sizes.map((previousValue, previousIndex) => {
+        let newSizes:number[][] = sizeCorrectedSizes.map((previousValue, previousIndex) => {
             // Size being editted should only be editted with user change
-            if (index === previousIndex) return roundedValue
+            if (index === previousIndex) {
+                previousValue[sizeIndex] = roundedValue
+                return previousValue
+            }
 
+            let previousValueColumn = previousValue[sizeIndex]
             /* Don't update if total is already been alocated or if value is locked from editing
              * only lock if more than 2 fields (cannot allocated to remaining fields causes deadlock)
              */
@@ -221,15 +257,16 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
             */
             let updateOptions:number[] = [totalChange, distributedChange]
             if (totalChange < 0)
-                updateOptions.push(previousValue * -1)
+                updateOptions.push(previousValueColumn * -1)
 
             const updateValue:number = this.closestToZeroInList(...updateOptions)
             totalChange = this.roundDecimalPlaces(totalChange - updateValue, 0)
 
-            return this.roundDecimalPlaces(previousValue + updateValue, 0)
+            previousValue[sizeIndex] = this.roundDecimalPlaces(previousValueColumn + updateValue, 0)
+            return previousValue
         })
 
-        return [newSizes, this.state.totalSize, newLockedPair]
+        return [newSizes, sizeCorrectedTotal, newLockedPair]
 
     }
 
@@ -241,42 +278,59 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
         })
     }
 
-    onModifyCut(event: ChangeEvent<HTMLInputElement>) {
+    onModifyCut(event: ChangeEvent<HTMLInputElement>, sizeIndex:number) {
         const index:number = parseInt(event.target.getAttribute('data-key') ?? "0")
         const newValue:number = event.target.valueAsNumber || 0
-        const [sizes, totalSize, lockedPair] = this.getNewSizes(newValue, index)
+        const [newSizes, newTotalSize, lockedPair] = this.getNewSizes(newValue, index, sizeIndex)
 
-        this.props.onChange('size', 'text', sizes)
+        this.props.onChange('size', 'number array', newSizes)
+
+        console.log(newSizes)
         this.setState({ 
-            sizes: sizes,
-            totalSize: totalSize,
+            sizes: newSizes, 
+            totalSize: newTotalSize,
             lockedPair: lockedPair,
         })
     }
 
 
     updateSizes(event: MouseEvent<HTMLButtonElement>, updateSize:number){
-        event.preventDefault()
-        const sizeLength:number = this.state.sizes.length + updateSize
-        if (sizeLength < 1) return
 
-        const dividedSize:number = this.state.totalSize / sizeLength
-        const dividedSizeRounded:number = this.roundDecimalPlaces(dividedSize, -1)
-        const sizeDifference:number = (dividedSize - dividedSizeRounded) * sizeLength
+        event.preventDefault()
+        const sizeCorrectedTotal = this.state.totalSize.slice(0, this.sizeLength())
         
-        let sizes:number[] = this.enforceSameTotal(
-            [...Array(sizeLength).fill(dividedSize)],
-            sizeDifference
-        )
+        const sizeLength:number = this.state.sizes.length + updateSize
+        if (sizeLength < 1) return 
         
-        this.props.onChange('size', 'text', sizes)
+        let dividedSizes = sizeCorrectedTotal.map((total, index) => {
+
+            const dividedSize:number = total / sizeLength
+            const dividedSizeRounded:number = this.roundDecimalPlaces(dividedSize, -1)
+            const sizeDifference:number = (dividedSize - dividedSizeRounded) * sizeLength
+            
+            let newSizes:number[] = this.enforceSameTotal(
+                [...Array(sizeLength).fill(dividedSize)],
+                sizeDifference
+            )
+            
+            this.props.onChange('size', 'text', newSizes)
+            return newSizes
+        })
+
+        let replaceSizes = dividedSizes[0].map((_, colIndex) => {
+            return dividedSizes.map(row => row[colIndex])
+        })
+
+        console.log(replaceSizes)
+        this.props.onChange('size', 'number array', replaceSizes)
         this.setState({
-            sizes: sizes,
+            sizes: replaceSizes,
             lockedPair: {current: -1, previous: -1}
         })
     }
 
-    generateCutInputsWrapper(item_type:string): ReactElement {
+    generateCutInputsWrapper(): ReactElement {
+        console.log(this.state.sizes)
         return (
             <>
                 <Divider variant="middle" />
@@ -287,10 +341,10 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
                             <div key={index}>
                                 <CutFormInput
                                     index={index}
-                                    type={item_type}
-                                    onChange={(event) => this.onModifyCut(event)}
+                                    type={this.props.itemType ?? ''}
+                                    onChange={(event, sizeIndex) => this.onModifyCut(event, sizeIndex)}
                                     onUpdate={(event, updateSize) => this.updateSizes(event, updateSize)}
-                                    value={size}
+                                    value={size ?? []}
                                 />
                                 <Error 
                                     fieldName='size'
@@ -305,8 +359,6 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
     }
 
     render(){
-        const item_type = this.props.itemData[this.props.rowData.item]?.item_type
-        console.log(item_type)
-        return this.generateCutInputsWrapper(item_type)
+        return this.generateCutInputsWrapper()
     }
 }

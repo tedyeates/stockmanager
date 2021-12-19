@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -64,7 +65,10 @@ class Stock(models.Model):
     quantity = models.IntegerField(_("Quantity of Item Stocked"))
     price = models.DecimalField(_("Price per Item"), max_digits=50, decimal_places=2, null=True)
     is_instock = models.BooleanField(_("Item is Instock"), default=True)  # False is Outstock
-    size = models.CharField(_("Item Size"), max_length=50, null=True)  # 20x20
+    size = ArrayField(
+        models.DecimalField(_("Size"), max_digits=50, decimal_places=2, null=True),
+        size=2, null=True
+    )
 
 
     class Meta:

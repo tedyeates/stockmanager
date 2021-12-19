@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 import re
 
-DATA_LOC = dirname(dirname(__file__)) + "/static/stockmanagement/data/"
+DATA_LOC = dirname(dirname(__file__)) + "\\static\\stockmanagement\\data\\"
 
 
 def load_stock_data():

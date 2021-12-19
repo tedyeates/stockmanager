@@ -27,10 +27,22 @@ class FormDataMixin(viewsets.ModelViewSet):
 
 
     def get_related_data(self):
+        """For returning data associated with selected API model
+        e.g Items for Stock
+        """
         return []
 
-
     def bar_cut(self, data, pk=None):
+        """Save stock item and cut stock if multiple sizes specified
+        Allows bars and sheets to be cut into multiple pieces and saved seperately
+
+        Args:
+            data (dict): Contains user entered data to be turned into stock model(s)
+            pk (number, optional): if update include primary key of stock to update. Defaults to None.
+
+        Returns:
+            Response: 201 if successful and 400 if unsuccessful
+        """
         sizes = data.pop('size')
         item = Item.objects.get(pk=data.pop('item'))
 
@@ -59,6 +71,7 @@ class FormDataMixin(viewsets.ModelViewSet):
 
     def create(self, request):
         data = request.data.copy()
+        print(data)
         if self.should_cut(data):
             return self.bar_cut(data)
 

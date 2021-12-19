@@ -1,7 +1,6 @@
 from rest_framework import viewsets, views
 
 from stockmanagement.models import Stock, Item, Group
-from stockmanagement.forms import StockForm, ItemForm, GroupForm
 from .serializers import GroupSerializer, ItemSerializer, StockSerializer
 from stockmanagement.util.custom_viewsets import FormDataMixin
 

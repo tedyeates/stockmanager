@@ -34,7 +34,9 @@ export type FormProps = {
 
 type FormState = {
     startDate: Date
-    inputValue: string
+    inputValues: {
+        [key: string]: string
+    }
 }
 
 type Chunk = FieldsDataType
@@ -44,7 +46,7 @@ export class Form extends Component<FormProps, FormState> {
         super(props)
         this.state = {
             startDate: new Date(),
-            inputValue: '',
+            inputValues: {},
         }
 
     }
@@ -92,10 +94,14 @@ export class Form extends Component<FormProps, FormState> {
      * @param {String} attrbuttes additional attributes used by Autocomplete tag
      * @returns HTML select with options for each object that can be related
      */
-    generateSelectField(options:any[], attributes:DataType): ReactElement {
+    generateSelectField(options:any[], attributes:DataType, fieldName:string): ReactElement {
         // Prevent Material UI undefined error
         if ('value' in attributes && !attributes.value) 
             attributes.value = null
+        
+        let inputValue = this.state.inputValues[fieldName]
+        if (!inputValue)
+            inputValue = ""
         return (
             <Autocomplete 
                 className='form-dropdown' 
@@ -107,9 +113,14 @@ export class Form extends Component<FormProps, FormState> {
                         size="small" 
                     />
                 }
-                inputValue={this.state.inputValue}
+                inputValue={inputValue}
                 onInputChange={
-                    (_, newInputValue) => this.setState({inputValue: newInputValue})
+                    (_, newInputValue) => this.setState(({inputValues})=>({
+                        inputValues: {
+                            ...inputValues,
+                            [fieldName]: newInputValue
+                        }
+                    }))
                 }
                 {...attributes}
             />
@@ -123,7 +134,8 @@ export class Form extends Component<FormProps, FormState> {
             {
                 value: this.props.rowData[fieldName],
                 onChange: (_:ChangeEvent<{}>, newValue:any) => this.props.onChange(fieldName, 'text', newValue),
-            }
+            },
+            fieldName
         )
     }
 
@@ -131,13 +143,15 @@ export class Form extends Component<FormProps, FormState> {
     generateModelSelectField(fieldName:string): ReactElement {
         const dataId = this.props.rowData[fieldName]
         const options=Object.values(this.props.data[fieldName])
+
         return this.generateSelectField(
             options,
             {
                 value: this.props.data[fieldName][dataId],
                 onChange: (_:ChangeEvent<{}>, newValue:any) => this.props.onChange(fieldName, 'number', newValue?.id),
-                getOptionLabel: (option:any) => option ? (option.name ?? option.code ?? '') : '',
-            }
+                getOptionLabel: (option:any) => option ? (option.name ?? option?.code ?? '') : '',
+            },
+            fieldName
         )
     }
 
@@ -206,7 +220,6 @@ export class Form extends Component<FormProps, FormState> {
             // Group other rows
             chunkedArray.push(array.slice(i, i + size))
         }
-        console.log(chunkedArray)
         return chunkedArray
     }
 

@@ -20,7 +20,7 @@ class ItemSerializer(serializers.ModelSerializer):
 class StockSerializer(serializers.ModelSerializer):
     date = serializers.DateTimeField(format='%d/%m/%Y', required=False)
     modified = serializers.DateTimeField(format='%d/%m/%Y', required=False)
-    size = serializers.CharField(max_length=50, required=True)
+    size = serializers.ListField(child=serializers.DecimalField(max_digits=50, decimal_places=2), required=True)
 
     class Meta:
         model = Stock
