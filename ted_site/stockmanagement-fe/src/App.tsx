@@ -1,16 +1,17 @@
 import { Component } from "react";
 import axios from "axios";
 
-import { API_URL } from './constants/dev';
+import { API_URL, FIELDS_URL } from './constants/dev';
 
 import Table from './Table'
 import { Popup } from './Popups'
 import Navbar from './Navbar'
-import { DataType, FormDataType } from "./util/types";
+import { DataType, FieldsDataType, FormDataType } from "./util/types";
 
 
 type AppState = {
     data: FormDataType
+    fields: FieldsDataType
     active: string
     rowData: DataType
     hasLoaded: boolean
@@ -23,8 +24,8 @@ class App extends Component<{},AppState> {
         this.state = {
             data: {
                 data: [], 
-                fields: [],
             },
+            fields: [],
             active: 'instock',
             rowData: {},
             hasLoaded: false,
@@ -35,15 +36,55 @@ class App extends Component<{},AppState> {
         this.getData(this.state.active)
     }
 
-    getData = (name: string): void => {
-        this.setState({ hasLoaded: false })
+    getDataPagination = (name: string, nextPage: string): void => {
+        if(!nextPage) return
         axios
-            .get(`${API_URL}${name}/`)
+            .get(nextPage)
+            .then(res => {
+                this.setState(({data}) => ({
+                    data: {
+                        ...data,
+                        data: [
+                            ...data.data,
+                            ...res.data.data
+                        ],
+                    },
+                    active: name,
+                }))
+
+                this.getDataPagination(name, res.data.next)
+            })
+    }
+
+    
+    getData = (name: string): void => {
+        const LIMIT = 25
+        this.setState({ hasLoaded: false })
+
+        axios
+            .get(`${API_URL}${name}/?limit=${LIMIT}`)
+            .then(res => {
+                console.log(res.data)
+                this.setState(() => ({
+                    data: res.data,
+                    active: name,
+                }))
+
+                this.getDataPagination(name, `${API_URL}${name}/?offset=${LIMIT}`)
+            })
+
+            
+
+        let fieldsName = name
+        if(fieldsName === 'instock' || fieldsName === 'outstock')
+            fieldsName = 'stocks'
+
+        axios
+            .get(`${FIELDS_URL}${fieldsName}`)
             .then(res => {
                 this.setState(() => ({
                     hasLoaded: true,
-                    data: res.data,
-                    active: name,
+                    fields: res.data
                 }))
             })
     }
@@ -62,12 +103,12 @@ class App extends Component<{},AppState> {
             'items',
         ]
         let popup:any = null
-        console.log(this.state.rowData)
         return (
             <>
                 <Popup
                     ref={instance => {popup = instance}}
                     data={this.state.data}
+                    fields={this.state.fields}
                     rowData={this.state.rowData}
                     title={this.state.active}
                     canCut={this.state.active === 'instock'}

@@ -27,6 +27,7 @@ export function Error({fieldName, errors}:ErrorProps):ReactElement {
 
 export type FormProps = {
     data: FormDataType
+    fields: FieldsDataType
     onChange: OnChangeType
     rowData: DataType
     errors: DataType
@@ -141,6 +142,8 @@ export class Form extends Component<FormProps, FormState> {
 
 
     generateModelSelectField(fieldName:string): ReactElement {
+        console.log(fieldName)
+        console.log(this.props.data)
         const dataId = this.props.rowData[fieldName]
         const options=Object.values(this.props.data[fieldName])
 
@@ -266,7 +269,7 @@ export class Form extends Component<FormProps, FormState> {
         const size = 2
         return (
             <div>
-                {this.chunkArray(this.props.data.fields, size).map((chunk, index) => {
+                {this.chunkArray(this.props.fields, size).map((chunk, index) => {
                     return this.hideAutoField(chunk, index, size)
                 })}
             </div>
