@@ -3,10 +3,15 @@ from stockmanagement.models import Stock, Item, Group
 from rest_framework.response import Response
 from rest_framework import views, viewsets
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
 from collections import OrderedDict
+
+from django.utils import timezone
+
 
 class FormDataMixin(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
+    permission_classes = (IsAuthenticated,) 
 
     @property
     def serializer_class(self):
@@ -41,10 +46,10 @@ class FormDataMixin(viewsets.ModelViewSet):
 
         if pk is not None:
             instances = Stock.objects.filter(pk=pk)
-            instances.update(**data, size=sizes.pop(0))
+            instances.update(**data, modified=timezone.now(), size=sizes.pop(0))
 
         Stock.objects.bulk_create([
-            Stock(**data, item=item, is_instock=True, size=size) for size in sizes
+            Stock(**data, item=item, size=size) for size in sizes
         ])
     
         return Response(status=201)
@@ -58,7 +63,8 @@ class FormDataMixin(viewsets.ModelViewSet):
         Returns:
             bool: Whether requested item should be cut
         """
-        return self.can_cut and 'size' in data and isinstance(data['size'], list)
+
+        return self.can_cut and 'size' in data and isinstance(data['size'][0], list)
     
 
     def update(self, request, pk=None):
@@ -73,6 +79,7 @@ class FormDataMixin(viewsets.ModelViewSet):
             Response: 201 if successful and 400 if not
         """
         data = request.data.copy()
+        print(data)
         if self.should_cut(data):
             return self.bar_cut(data, pk=pk)
 
@@ -135,6 +142,7 @@ class FormDataMixin(viewsets.ModelViewSet):
 
 
 class FieldViewMixin(views.APIView):
+    permission_classes = (IsAuthenticated,) 
     
     model = None
     exclude = None

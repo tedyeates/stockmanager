@@ -1,12 +1,12 @@
 import { Component } from "react";
 import axios from "axios";
 
-import { API_URL, FIELDS_URL } from './constants/dev';
+import { DataType, FieldsDataType, FormDataType } from "./util/types";
 
 import Table from './Table'
 import { Popup } from './Popups'
 import Navbar from './Navbar'
-import { DataType, FieldsDataType, FormDataType } from "./util/types";
+import { AuthContext } from './Login'
 
 
 type AppState = {
@@ -15,9 +15,12 @@ type AppState = {
     active: string
     rowData: DataType
     hasLoaded: boolean
+    isAuthenticated: boolean
 }
 
 class App extends Component<{},AppState> {
+    static contextType = AuthContext
+    
     constructor(props: {}) {
         super(props)
 
@@ -29,6 +32,7 @@ class App extends Component<{},AppState> {
             active: 'instock',
             rowData: {},
             hasLoaded: false,
+            isAuthenticated: false
         }
     }
 
@@ -36,41 +40,45 @@ class App extends Component<{},AppState> {
         this.getData(this.state.active)
     }
 
-    getDataPagination = (name: string, nextPage: string): void => {
-        if(!nextPage) return
-        axios
-            .get(nextPage)
-            .then(res => {
-                this.setState(({data}) => ({
-                    data: {
-                        ...data,
-                        data: [
-                            ...data.data,
-                            ...res.data.data
-                        ],
-                    },
-                    active: name,
-                }))
+    // TODO: Relook at pagnation and caching/indexing
+    // getDataPagination = (name: string, nextPage: string, header: DataType): void => {
+    //     if(!nextPage) return
+    //     axios
+    //         .get(nextPage, {
+    //             headers: header
+    //         })
+    //         .then(res => {
+    //             this.setState(({data}) => ({
+    //                 data: {
+    //                     ...data,
+    //                     data: [
+    //                         ...data.data,
+    //                         ...res.data.data
+    //                     ],
+    //                 },
+    //                 active: name,
+    //             }))
 
-                this.getDataPagination(name, res.data.next)
-            })
-    }
+    //             this.getDataPagination(name, res.data.next, header)
+    //         })
+    // }
 
     
     getData = (name: string): void => {
-        const LIMIT = 25
+        // const LIMIT = 25
+        const AUTH_HEADER = this.context.getAuthHeader()
         this.setState({ hasLoaded: false })
-
+        
         axios
-            .get(`${API_URL}${name}/?limit=${LIMIT}`)
+            .get(`${process.env.REACT_APP_BASE_URL}/api/${name}/`, {
+                headers: AUTH_HEADER
+            })
             .then(res => {
-                console.log(res.data)
                 this.setState(() => ({
                     data: res.data,
                     active: name,
                 }))
 
-                this.getDataPagination(name, `${API_URL}${name}/?offset=${LIMIT}`)
             })
 
             
@@ -80,7 +88,9 @@ class App extends Component<{},AppState> {
             fieldsName = 'stocks'
 
         axios
-            .get(`${FIELDS_URL}${fieldsName}`)
+            .get(`${process.env.REACT_APP_BASE_URL}/fields/${fieldsName}`, {
+                headers: AUTH_HEADER
+            })
             .then(res => {
                 this.setState(() => ({
                     hasLoaded: true,
@@ -111,7 +121,7 @@ class App extends Component<{},AppState> {
                     fields={this.state.fields}
                     rowData={this.state.rowData}
                     title={this.state.active}
-                    canCut={this.state.active === 'instock'}
+                    canCut={this.state.active === 'instock' || this.state.active === 'outstock'}
                     getData={this.getData}
                 />
                 <Navbar

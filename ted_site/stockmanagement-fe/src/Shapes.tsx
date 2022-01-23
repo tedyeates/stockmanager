@@ -32,9 +32,59 @@ function Triangle(props: TriangleProps): ReactElement {
     let [side, oppositeSide] = widthOrHeight(props.rotate)
 
     return (
-        <div className={`${oppositeSide}-${props.size} ${side}-${hypotenuse} inline-block overflow-hidden ${props.rotate} transform origin-${props.position} align-top`}>
+        <div className={`
+            ${oppositeSide}-${props.size} 
+            ${side}-${hypotenuse} 
+            inline-block 
+            overflow-hidden 
+            ${props.rotate} 
+            transform 
+            origin-${props.position} 
+            align-top
+        `}>
             <div className={`h-${props.size} w-${props.size} bg-${props.color} ${rotateBack} inline-block transform origin-${props.position} float-right`}></div>
         </div>
+    )
+}
+
+type CircleProps = {
+    color: string
+    size: number
+    onClick?: () => void
+}
+
+function Close(props: CircleProps): ReactElement {
+    return (
+        <button className={`
+                rounded-full 
+                -top-1/4
+                -right-1.5
+                absolute
+                bg-blue-700
+                h-${Math.floor(props.size/2)} 
+                w-${Math.floor(props.size/2)}
+                justify-center
+                flex 
+                items-center
+                text-center
+                text-white
+                hover:bg-blue-800
+        `}
+        onClick={props.onClick}
+        >
+            <svg 
+                className="h-2 w-2 text-white"  
+                viewBox="0 0 24 24"  
+                fill="none"  
+                stroke="currentColor"  
+                stroke-width="2"  
+                stroke-linecap="round"  
+                stroke-linejoin="round"
+            >  
+                <line x1="18" y1="6" x2="6" y2="18" />  
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg> 
+        </button>
     )
 }
 
@@ -74,15 +124,13 @@ export function StandardTag(props: StandardTagProps): ReactElement {
 }
 
 
-type ExtendedTagProps = StandardTagProps & ShapeProps
-
-type StartProps = ExtendedTagProps & {
-    onClick: () => void
+type ExtendedTagProps = StandardTagProps & ShapeProps & {
+    onClick?: () => void
 }
 
-export function StartTag(props: StartProps): ReactElement{
+export function StartTag(props: ExtendedTagProps): ReactElement{
     return (
-        <div className={`${props.className} inline-block`} onClick={() => props.onClick()}>
+        <div className={`${props.className} inline-block`}>
             <Tag
                 text={props.text}
                 color={props.color}
@@ -126,7 +174,7 @@ export function MiddleTag(props: ExtendedTagProps): ReactElement {
 
 export function EndTag(props: ExtendedTagProps): ReactElement {
     return (
-        <div className={`${props.className} inline-block`}>
+        <div className={`${props.className} inline-block relative`}>
             <Triangle
                 size={props.size}
                 color={props.color}
@@ -137,6 +185,11 @@ export function EndTag(props: ExtendedTagProps): ReactElement {
                 text={props.text}
                 size={props.size}
                 color={props.color}
+            />
+            <Close
+                size={props.size}
+                color={props.color}
+                onClick={props.onClick}
             />
         </div>
     )
