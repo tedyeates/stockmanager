@@ -12,4 +12,7 @@ router.register(r'outstock', OutstockViewSet)
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    path('fields/groups', GroupFieldView.as_view()),
+    path('fields/items', ItemFieldView.as_view()),
+    path('fields/stocks', StockFieldView.as_view())
 ]

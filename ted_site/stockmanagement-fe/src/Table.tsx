@@ -161,7 +161,7 @@ class Table extends Component<TableProps, TableState> {
             this.props.data.data.length ?
             <tr className="py-4">
                 {Object.entries(this.props.data.data[0]).map(([key, _], index) => {
-                    return <th className='px-8 py-4' key={index}>{title(key)}</th>
+                    return <th className='px-2 py-4' key={index}>{title(key)}</th>
                 })}
             </tr>
             :

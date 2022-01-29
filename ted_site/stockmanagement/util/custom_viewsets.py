@@ -1,24 +1,17 @@
 from stockmanagement.models import Stock, Item, Group
 
 from rest_framework.response import Response
-from rest_framework import viewsets
+from rest_framework import views, viewsets
+from rest_framework.pagination import LimitOffsetPagination
 from collections import OrderedDict
 
 class FormDataMixin(viewsets.ModelViewSet):
+    pagination_class = LimitOffsetPagination
+
     @property
     def serializer_class(self):
         """Serializer for model type specified in model"""
         return NotImplemented
-
-    @property
-    def model(self):
-        """Model to use for getting field data"""
-        return NotImplemented
-
-    @property
-    def exclude(self):
-        """Field to not include in fields data"""
-        return []
 
     @property
     def can_cut(self):
@@ -118,17 +111,49 @@ class FormDataMixin(viewsets.ModelViewSet):
         Returns:
             Response: HTTP Response containing model, field and related data
         """
-        fields = self.model._meta.get_fields()
-        serializer = self.serializer_class(self.get_queryset(), many=True)
-        field_data = [
-            (field.name, self.get_field_type(field), self.compact_choices(field.choices)) for field in fields if field.name not in self.exclude
-        ]
+        page = self.paginate_queryset(self.get_queryset())
+    
         related_data = [
             (name, self.get_indexed_data(data, serializer)) for name, data, serializer in self.get_related_data()
         ]
 
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            return Response(OrderedDict([
+                ('next', response.data['next']),
+                ('data', response.data['results']),
+                *related_data,
+            ]))
+        
+        serializer = self.serializer_class(self.get_queryset(), many=True)
+
         return Response(OrderedDict([
             ('data', serializer.data),
-            ('fields', field_data),
             *related_data,
         ]))
+
+
+class FieldViewMixin(views.APIView):
+    
+    model = None
+    exclude = None
+
+    def get_field_type(self, field):
+        if field.choices:
+            return 'ChoiceField'
+        return field.get_internal_type()
+
+
+    def compact_choices(self, choices):
+        if choices:
+            return [choice[0] for choice in choices]
+        return None
+
+
+    def get(self, request, format=None):
+        fields = self.model._meta.get_fields()
+        field_data = [
+            (field.name, self.get_field_type(field), self.compact_choices(field.choices)) for field in fields if field.name not in self.exclude
+        ]
+        return Response(field_data)

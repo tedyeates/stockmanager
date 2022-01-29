@@ -11,12 +11,12 @@ import { API_URL } from "./constants/dev"
 import { CutForm } from "./CutForm"
 import { Form } from "./Forms"
 import { title } from "./util/strings"
-import { DataType, FormDataType } from "./util/types"
+import { DataType, FieldsDataType, FormDataType } from "./util/types"
 
 type PopupProps = {
     data: FormDataType
+    fields: FieldsDataType
     rowData: DataType
-    
     title: string
     canCut: boolean
     getData: (name:string) => void
@@ -151,6 +151,7 @@ export class Popup extends Component<PopupProps, PopupState> {
                 <form id="popup-form" className="w-full max-w-lg">
                     <Form 
                         data={this.props.data}
+                        fields={this.props.fields}
                         onChange={this.changeField}
                         rowData={this.state.rowData}
                         errors={this.state.errors}

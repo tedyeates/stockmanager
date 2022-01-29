@@ -9,7 +9,6 @@ export type FieldsDataType = FieldsDataTypeRow[]
 
 export type FormDataType = {
     data: DataType[]
-    fields: FieldsDataType
     [key: string]: {[key:number]: DataType}
 }
 
