@@ -7,7 +7,8 @@ https://realpython.com/deploying-a-django-app-and-postgresql-to-aws-elastic-bean
 
 * Use premade configs within this repo instead of suggested ones in article
 * Follow Postgresql RDS creation guide but select **instance** db.t4g.micro for cheapest database as of writing (others can be selected, less than t2/t1 not supported for Postgresql)
-* Ensure awsebcli, future and any python packages containing 'win' are removed from requirements.txt when you run `pip freeze > requirements.txt` as this will cause an error with deployment. https://stackoverflow.com/questions/39493756/aws-elastic-beanstalk-error-requirements-txt
+* Ensure awsebcli, future and any python packages containing 'win' (if using windows) are removed from requirements.txt (this has already been completed for this project) when you run `pip freeze > requirements.txt` as this will cause an error with deployment. https://stackoverflow.com/questions/39493756/aws-elastic-beanstalk-error-requirements-txt
+* Replace psycopg2 with aws-pycopg2 in `requirements.txt` and implement relevant setup for Postgresql as seen in `.ebextensions/python.config`
 
 ### React with S3
 https://medium.com/serverlessguru/deploy-reactjs-app-with-s3-static-hosting-f640cb49d7e6
