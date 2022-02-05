@@ -1,4 +1,4 @@
-asgiref==3.3.1
+asgiref==3.5.0
 aws-psycopg2==1.2.1
 bootstrap4==0.1.0
 botocore==1.21.65
@@ -7,7 +7,7 @@ certifi==2020.12.5
 chardet==3.0.4
 charset-normalizer==2.0.10
 colorama==0.4.3
-Django==3.1.7
+Django==4.0.2
 django-cors-headers==3.7.0
 django-crispy-forms==1.11.1
 django-extensions==3.1.1
@@ -19,12 +19,13 @@ jmespath==0.10.0
 openpyxl==3.0.6
 pathspec==0.5.9
 python-dateutil==2.8.1
+python-decouple==3.6
 pytz==2021.1
-PyYAML==5.3.1
 requests==2.26.0
 semantic-version==2.8.5
 six==1.14.0
-sqlparse==0.4.1
+sqlparse>=0.4.2
 termcolor==1.1.0
+tzdata==2021.5
 urllib3==1.26.8
 wcwidth==0.1.9
