@@ -12,7 +12,8 @@ SUPER_USER_PASSWORD=<Password for Super User Access to Django Website>
 Omit the two AWS related addresses on initial deploy, as you can obtain these from AWS after deploying. Afterwards update `.env` and redeploy
 
 ### Create Django Secret Key
-```import secrets
+```
+import secrets
 
 print(secrets.token_urlsafe())
 ```
