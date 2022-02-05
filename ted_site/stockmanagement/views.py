@@ -51,6 +51,7 @@ class InstockViewSet(FormDataMixin):
 class OutstockViewSet(FormDataMixin):
     queryset = Stock.objects.filter(is_instock=False).order_by('-modified')
     serializer_class = StockSerializer
+    can_cut = True
     related_data = [('item', Item.objects.all(), ItemSerializer)]
 
     def get_queryset(self):

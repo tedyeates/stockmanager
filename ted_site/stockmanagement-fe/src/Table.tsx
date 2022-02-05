@@ -1,6 +1,6 @@
 import { Component, ReactElement } from "react";
-import TextField from '@material-ui/core/TextField';
-import Autocomplete from '@material-ui/lab/Autocomplete';
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
 
 import { title } from './util/strings'
 
@@ -8,15 +8,13 @@ import { StartTag, EndTag } from './Shapes'
 import { DataType, FormDataType } from './util/types'
 
 type SearchProps = {
-    getSearchOptions: (column: string, columnSelected: boolean) => Set<string>
+    getSearchOptions: () => Array<DataType>
     addSearchItem: (columnSelected: string, value: string) => void
     removeSearchItem: (columnName: string) => void
     searchedItems: {column: string, data: string}[]
 }
 
 type SearchState = {
-    columnSelected: boolean
-    currentColumn: string
     autocompleteValue: string
 }
 
@@ -25,28 +23,17 @@ class Search extends Component<SearchProps, SearchState> {
         super(props)
 
         this.state = {
-            columnSelected: false,
-            currentColumn: "",
             autocompleteValue: ""
         }
     }
 
-    onChangeSwitch(value: string): void {
+    onChangeSwitch(value: DataType): void {
         if (!value) return
-        if (this.state.columnSelected) {
-            this.setState(() => ({
-                columnSelected: false,
-                autocompleteValue: ""
-            }))
-            this.props.addSearchItem(this.state.currentColumn, value)
-            return
-        }
-
-        this.setState({
-            currentColumn: value,
-            columnSelected: true,
+        this.setState(() => ({
+            columnSelected: false,
             autocompleteValue: ""
-        })
+        }))
+        this.props.addSearchItem(value.column, value.cell)
     }
 
     onInputChange(value: string, reason: string): void {
@@ -55,23 +42,27 @@ class Search extends Component<SearchProps, SearchState> {
     }
 
     render() {
-        const columnsLabel = this.state.columnSelected ? this.state.currentColumn : "Columns"
         return (
             <div className='w-1/2 m-3'>
                 <Autocomplete
                     id="table-search"
                     inputValue={this.state.autocompleteValue}
-                    freeSolo={this.state.columnSelected}
+                    freeSolo
                     options={
-                        [...this.props.getSearchOptions(this.state.currentColumn, this.state.columnSelected)].sort()
+                        this.props.getSearchOptions()
+                        .sort((a,b) => {
+                            if(a.column > b.column) return -1
+                            if(a.column < b.column) return 1
+                            return 0
+                        })
                     }
-                    getOptionSelected={option => option !== ''}
-                    getOptionLabel={option => option ? title(option.toString()) : ''}
+                    groupBy={(option) => title(option.column)}
+                    getOptionLabel={option => option ? title(option.cell.toString()) : ''}
                     onInputChange={(_, value, reason) => this.onInputChange(value, reason)}
-                    onChange={(_, value) => {if (value !== null) this.onChangeSwitch(value)}}
-                    renderInput={(params) => <TextField {...params} label={columnsLabel} variant="outlined" />}
+                    onChange={(_, value) => {if (value !== null && typeof value !== 'string') this.onChangeSwitch(value)}}
+                    renderInput={(params) => <TextField {...params} label="Search Table" variant="outlined" />}
                 />            
-                <div className="h-5 text-left">
+                <div className="h-10 text-left">
                     {this.props.searchedItems.map(({column, data}, index) => (
                         <>
                             <StartTag
@@ -80,7 +71,6 @@ class Search extends Component<SearchProps, SearchState> {
                                 color='blue-700'
                                 text={title(column)}
                                 className="ml-1"
-                                onClick={() => this.props.removeSearchItem(column)}
                             />
                             <EndTag
                                 key={`end-${index}`}
@@ -88,6 +78,7 @@ class Search extends Component<SearchProps, SearchState> {
                                 color='blue-500'
                                 text={data}
                                 className="-ml-8"
+                                onClick={() => this.props.removeSearchItem(column)}
                             />
                         </>
                     ))}
@@ -142,25 +133,38 @@ class Table extends Component<TableProps, TableState> {
         )
     }
 
-    getSearchOptions(column: string, columnSelected: boolean): Set<string>{
-        if (this.props.data.data.length < 1)
-            return new Set<string>([])
-        
-        if (columnSelected) {
-            return new Set<string>(this.filterRows().map(data => {
-                return String(data[column])
-            }))
-        }
-        
-        return new Set<string>(Object.keys(this.props.data.data[0]))
+    getSearchOptions = (): Array<DataType> => {
+        let seenOptions = new Set<string>()
+        let searchOptions = new Array<DataType>()
+        this.filterRows().forEach(item => {
+            Object.entries(item).forEach(([column, cell]) => {
+                if (!(cell ?? false)) return
+                let searchString = `${column} : ${cell}`
+
+                // Don't allow duplicate search options
+                if (!seenOptions.has(searchString)){
+                    seenOptions.add(searchString)
+                    searchOptions.push({
+                        label: searchString,
+                        cell: cell,
+                        column: column
+                    })
+                }
+
+            })
+        })
+
+        return searchOptions
     }
 
-    
     renderHeader(): ReactElement {
+        console.log(this.props.data)
         return (
             this.props.data.data.length ?
             <tr className="py-4">
-                {Object.entries(this.props.data.data[0]).map(([key, _], index) => {
+                {Object.entries(this.props.data.data[0]).filter(([key, _]) => {
+                    return key !== "is_instock"
+                }).map(([key, _], index) => {
                     return <th className='px-2 py-4' key={index}>{title(key)}</th>
                 })}
             </tr>
@@ -213,7 +217,9 @@ class Table extends Component<TableProps, TableState> {
         return this.filterRows().map((data, index) => {
             return (
                 <tr key={index} onClick={(): void => this.props.rowClick(data)}>
-                    {Object.entries(data).map(([key, value]) => {
+                    {Object.entries(data).filter(([key, _]) => {
+                        return key !== "is_instock"
+                    }).map(([key, value]) => {
                         return this.renderCell(key, index, value)
                     })}
                 </tr>    
@@ -222,10 +228,11 @@ class Table extends Component<TableProps, TableState> {
     }
 
     render(): ReactElement {
+
         return (
             <>
                 <Search 
-                    getSearchOptions={(column, columnSelected) => this.getSearchOptions(column, columnSelected)}
+                    getSearchOptions={this.getSearchOptions}
                     searchedItems={this.state.search}
                     addSearchItem={(columnSelected, value) => this.addSearchItem(columnSelected, value)}
                     removeSearchItem={(columnName) => this.removeSearchItem(columnName)}

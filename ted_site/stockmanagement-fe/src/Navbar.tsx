@@ -1,10 +1,11 @@
-import { Component } from "react";
 // @ts-ignore
-import { TailwindNavbar } from 'tailwind-navbar-react';
+import { TailwindNavbar } from 'tailwind-navbar-react'
 
 import { title } from './util/strings'
-import { LOGOUT_URL } from './constants/dev';
-import { TiPlus } from 'react-icons/ti';
+import { TiPlus } from 'react-icons/ti'
+import { AuthContext } from './Login'
+import { useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 type TabProps = {
     name: string
@@ -53,7 +54,9 @@ type NavbarProps = {
 }
 
 function Navbar(props: NavbarProps) {
-    console.log(props.showCreateTab)
+    let auth = useContext(AuthContext)
+    let navigate = useNavigate()
+    
     return (
         <TailwindNavbar
             brand="PCElemac"
@@ -72,9 +75,12 @@ function Navbar(props: NavbarProps) {
                             />
                         )
                     })}
-                    <li className="hover:bg-blue-800">
-                        <a href={LOGOUT_URL} className="tab">Logout</a>
-                    </li>
+                    <Tab
+                        key={'logout'}
+                        name={'logout'}
+                        active={''}
+                        onClick={() => auth.signout(() => navigate("/"))}
+                    />
                 </ul>
             </nav>
         </TailwindNavbar>

@@ -24,4 +24,4 @@ class StockSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Stock
-        exclude = ['is_instock']
+        fields = '__all__'

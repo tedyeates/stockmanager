@@ -6,23 +6,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 
 import { title } from './util/strings'
 import { DataType, FormDataType, OnChangeType, FieldsDataType } from './util/types'
-
-
-type ErrorProps = {
-    fieldName: string
-    errors: {
-        [key: string]: string[]
-    }
-}
-export function Error({fieldName, errors}:ErrorProps):ReactElement {
-    if (fieldName in errors)
-        return (
-            <div className='text-red-500'>
-                {errors['size']}
-            </div>
-        )
-    return <></>
-}
+import { Error } from './Errors'
 
 
 export type FormProps = {
@@ -142,8 +126,6 @@ export class Form extends Component<FormProps, FormState> {
 
 
     generateModelSelectField(fieldName:string): ReactElement {
-        console.log(fieldName)
-        console.log(this.props.data)
         const dataId = this.props.rowData[fieldName]
         const options=Object.values(this.props.data[fieldName])
 
@@ -183,6 +165,7 @@ export class Form extends Component<FormProps, FormState> {
         }
     }
 
+    
     /**
      * Creates a label for the field and field
      * @param {String} fieldName Name of field to be used as label and field name attribute

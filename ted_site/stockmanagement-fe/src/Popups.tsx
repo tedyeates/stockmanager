@@ -6,10 +6,10 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 import axios, { AxiosResponse } from "axios"
 import { Component } from "react"
-import { API_URL } from "./constants/dev"
 
 import { CutForm } from "./CutForm"
 import { Form } from "./Forms"
+import { AuthContext } from "./Login";
 import { title } from "./util/strings"
 import { DataType, FieldsDataType, FormDataType } from "./util/types"
 
@@ -29,6 +29,7 @@ type PopupState = {
 }
 
 export class Popup extends Component<PopupProps, PopupState> {
+    static contextType = AuthContext
 
     constructor(props: PopupProps) {
         super(props)
@@ -80,9 +81,14 @@ export class Popup extends Component<PopupProps, PopupState> {
      * @returns 
      */
     checkUpdate(name: string, data: DataType, id:number=-1): Promise<AxiosResponse<any>>{
+        const AUTH_HEADER = this.context.getAuthHeader()
         if (id < 0) 
-            return  axios.post(`${API_URL}${name}/`, data)
-        return axios.put(`${API_URL}${name}/${id}/`, data)
+            return  axios.post(`${process.env.REACT_APP_BASE_URL}/api/${name}/`, data, {
+                headers: AUTH_HEADER
+            })
+        return axios.put(`${process.env.REACT_APP_BASE_URL}/api/${name}/${id}/`, data, {
+            headers: AUTH_HEADER
+        })
     }
     
 
@@ -119,7 +125,7 @@ export class Popup extends Component<PopupProps, PopupState> {
      */
     changeField = (fieldName: string, inputType: string, value: any=null): void => {
         value = inputType === 'number' && value !== '' ? parseFloat(value) : value
-        
+        console.log(this.state.rowData)
         // Arrow function ensures this refers to Popup when called from Form
         this.setState(({rowData}) => ({
             rowData: {
@@ -172,8 +178,35 @@ export class Popup extends Component<PopupProps, PopupState> {
                 </form>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={this.closePopup}>Cancel</Button>
-                    <Button onClick={() => this.createData(this.props.title, this.state.rowData)}>Save</Button>
+                    {this.props.title === "instock" ?
+                        <>
+                            <Button
+                                variant="outlined"
+                                className="pc-button" 
+                                onClick={() => this.createData(this.props.title, {...this.state.rowData, is_instock: false})}
+                            >
+                                Move to Outstock
+                            </Button>
+                            <div style={{flex: '1 0 0'}} />
+                        </>
+                        :
+                        <></>
+                        
+                    }
+                    <Button 
+                        variant="outlined"
+                        className="pc-button" 
+                        onClick={this.closePopup}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        className="pc-button" 
+                        onClick={() => this.createData(this.props.title, this.state.rowData)}
+                    >
+                        Save
+                    </Button>
                 </DialogActions>
             </Dialog>
           </div>

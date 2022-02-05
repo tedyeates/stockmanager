@@ -2,7 +2,7 @@ from stockmanagement.util.load_data_excel import *
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 
-#  04_loadstock: command: "django-admin.py loadstock"
+#  05_loadstock: command: "source /var/app/venv/*/bin/activate && python3 manage.py loadstock"
 class Command(BaseCommand):
 
     def handle(self, *args, **options):

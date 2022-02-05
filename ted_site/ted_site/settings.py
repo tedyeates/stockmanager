@@ -26,7 +26,7 @@ SECRET_KEY = '*#305hpb*cwpr@*t!)e)0sk8+$lmz03l+*#&x(1qcupl0uq*4&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['PCElemacStockManager.ap-southeast-1.elasticbeanstalk.com', '127.0.0.1', 'localhost']
+# ALLOWED_HOSTS = ['pcelemac.ap-southeast-1.elasticbeanstalk.com', '127.0.0.1', 'localhost', '172.31.38.154']
 ALLOWED_HOSTS = ['*']
 
 
@@ -44,9 +44,11 @@ INSTALLED_APPS = [
     'django_extensions',
     'crispy_forms',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
 
     'stockmanagement',
+    'login',
     'ted_site',
 ]
 
@@ -69,6 +71,12 @@ CORS_ALLOW_ALL_ORIGINS = True
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:3000",
 # ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
 
 TEMPLATES = [
     {
