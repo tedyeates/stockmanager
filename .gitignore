@@ -4,3 +4,4 @@ migrations
 __pycache__/
 .vscode
 node_modules/
+ted_site/.env
