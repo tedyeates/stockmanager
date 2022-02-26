@@ -78,18 +78,18 @@ class FormDataMixin(viewsets.ModelViewSet):
         Returns:
             Response: 201 if successful and 400 if not
         """
-        data = request.data.copy()
-        print(data)
-        if self.should_cut(data):
-            return self.bar_cut(data, pk=pk)
+        # data = request.data.copy()
+        # if self.should_cut(data):
+        #     return self.bar_cut(data, pk=pk)
 
         return super().update(request)
 
 
     def create(self, request):
-        data = request.data.copy()
-        if self.should_cut(data):
-            return self.bar_cut(data)
+        print(request.data)
+        # data = request.data.copy()
+        # if self.should_cut(data):
+        #     return self.bar_cut(data)
 
         return super().create(request)
 

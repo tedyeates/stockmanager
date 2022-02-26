@@ -43,9 +43,10 @@ function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps
     
     function generateInputFields(){
         let inputs:ReactElement[] = [inputField(index.toString(), 0)]
-        if (type === 'SHEET')
+        if (type === 'SHEET'){
+            inputs.push(<div className="py-3">X</div>)
             inputs.push(inputField(`${index.toString()}-2`, 1))
-
+        }
         return inputs
     }
     
@@ -58,7 +59,7 @@ function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps
                 <div className="inline-flex">
                     {generateInputFields()}
                 </div>
-                {type === 'BAR' || type === 'SHEET' ?
+                {(type === 'BAR' || type === 'SHEET') && process.env.REACT_APP_CUT_ENABLED ?
                     <div className="inline-flex">
                         <button className="cut-button" key={`plus-${index}`} onClick={event => onUpdate(event, 1)}>
                             <TiPlus/>
@@ -99,7 +100,7 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
         let sizeLength = this.sizeLength()
 
         this.state = {
-            sizes: [this.props.rowData['size']] ?? [[]],
+            sizes: [this.props.rowData['size'] ?? []] ,
             sizeLength: sizeLength,
             totalSize: this.props.rowData['size']  ?? [],
             lockedPair: {
@@ -280,7 +281,11 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
         const newValue:number = event.target.valueAsNumber || 0
         const [newSizes, newTotalSize, lockedPair] = this.getNewSizes(newValue, index, sizeIndex)
 
-        this.props.onChange('size', 'number array', newSizes)
+
+        if(!process.env.REACT_APP_CUT_ENABLED)
+            this.props.onChange('size', 'number array', newSizes[0])
+        else
+            this.props.onChange('size', 'number array', newSizes[1])
 
         this.setState({ 
             sizes: newSizes, 

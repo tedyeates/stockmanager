@@ -96,6 +96,8 @@ class App extends Component<{},AppState> {
                     hasLoaded: true,
                     fields: res.data
                 }))
+            }).catch(error => {
+                console.log(error.message)
             })
     }
 
@@ -109,6 +111,7 @@ class App extends Component<{},AppState> {
         const tabs = [
             'instock',
             'outstock',
+            'current stock',
             'groups',
             'items',
         ]

@@ -61,10 +61,11 @@ class Stock(models.Model):
     purchase_order_number = models.CharField(_("PO Number"), max_length=50, null=True)
     pc_job = models.CharField(_("PC Job"), max_length=50, null=True)  # YYXXXX, STOCK = 0000000, No Job -0000001
     supplier = models.CharField(_("Supplier"), max_length=50, null=True)
-    item = models.ForeignKey(Item, verbose_name=_("Item Stocked"), on_delete=models.CASCADE)
-    quantity = models.IntegerField(_("Quantity of Item Stocked"))
+    item = models.ForeignKey(Item, verbose_name=_("Item Stocked"), null=True, on_delete=models.SET_NULL)
+    quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2)
     price = models.DecimalField(_("Price per Item"), max_digits=50, decimal_places=2, null=True)
     is_instock = models.BooleanField(_("Item is Instock"), default=True)  # False is Outstock
+    is_current_stock = models.BooleanField(_("Item is currently stocked"), default=True)  # Instock - Outstock
     size = ArrayField(
         models.DecimalField(_("Size"), max_digits=50, decimal_places=2, null=True),
         size=2, null=True
