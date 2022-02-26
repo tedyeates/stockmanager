@@ -14,10 +14,11 @@ type ErrorProps = {
 }
 
 export function Error({fieldName, errors}:ErrorProps):ReactElement {
+    console.log(errors)
     if (fieldName in errors)
         return (
             <div className='text-red-500'>
-                {errors[fieldName]}
+                {errors[fieldName][0]}
             </div>
         )
     return <></>

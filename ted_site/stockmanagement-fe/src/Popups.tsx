@@ -47,6 +47,7 @@ export class Popup extends Component<PopupProps, PopupState> {
         this.setState({
             open: false,
             rowData: {},
+            errors: {}
         })
     }
 
@@ -62,7 +63,7 @@ export class Popup extends Component<PopupProps, PopupState> {
     /**
      * Callback for click of table row. 
      * Opens popup and stores column data from row
-     * @param {Object} data row column data
+     * @param data row column data
      */
     rowSelect(data: DataType): void {
         let {date, modified, ...rowData} = data
@@ -75,9 +76,9 @@ export class Popup extends Component<PopupProps, PopupState> {
 
     /**
      * Check if id provided then update else create
-     * @param {String} name Model to update
-     * @param {Object} data Data for update/create
-     * @param {Integer} id  Id of model to update
+     * @param name Model to update
+     * @param data Data for update/create
+     * @param id  Id of model to update
      * @returns 
      */
     checkUpdate(name: string, data: DataType, id:number=-1): Promise<AxiosResponse<any>>{
@@ -94,22 +95,24 @@ export class Popup extends Component<PopupProps, PopupState> {
 
     /**
      * Creates/updates data and then updates table data with new data
-     * @param {String} name        Name of router endpoint for Model
+     * @param name        Name of router endpoint for Model
+     * @param data Contains outstock data to save
      */
-    createData(name: string, popupData: DataType): void{
+    createData(name: string, popupData: DataType): void {
         // Override current data with new data
         const id = popupData?.id ?? -1
         if(id) delete popupData.id
 
         this.checkUpdate(name, popupData, id)
-            .then((res) => {
+            .then(res => {
                 this.props.getData(name)
                 this.setState({
                     errors: {}
                 })
                 this.closePopup()
             })
-            .catch((error) => {
+            .catch(error => {
+                console.log(error.response)
                 this.setState({
                     errors: error.response.data
                 })
@@ -183,7 +186,11 @@ export class Popup extends Component<PopupProps, PopupState> {
                             <Button
                                 variant="outlined"
                                 className="pc-button" 
-                                onClick={() => this.createData(this.props.title, {...this.state.rowData, is_instock: false})}
+                                onClick={() => this.createData(this.props.title, {
+                                    ...this.state.rowData, 
+                                    id: -1, 
+                                    is_instock: false
+                                })}
                             >
                                 Move to Outstock
                             </Button>
