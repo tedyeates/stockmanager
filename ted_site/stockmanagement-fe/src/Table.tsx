@@ -89,6 +89,16 @@ class Search extends Component<SearchProps, SearchState> {
 }
 
 
+type ColumnProps = {
+    index: number
+    name: string
+}
+
+function TableColumn({index, name}: ColumnProps){
+    return <th className='px-2 py-4' key={index}>{title(name)}</th>
+}
+
+
 type TableProps = {
     data: FormDataType
     rowClick: (data: DataType) => void
@@ -163,10 +173,12 @@ class Table extends Component<TableProps, TableState> {
             this.props.data.data.length ?
             <tr className="py-4">
                 {Object.entries(this.props.data.data[0]).filter(([key, _]) => {
-                    return key !== "is_instock"
+                    return key !== "stock_type"
                 }).map(([key, _], index) => {
-                    return <th className='px-2 py-4' key={index}>{title(key)}</th>
+                    return <TableColumn index={index} name={key} />
                 })}
+                
+                <TableColumn index={-1} name="Total Price" />
             </tr>
             :
             <></>
@@ -195,13 +207,13 @@ class Table extends Component<TableProps, TableState> {
     idToName(fieldName: string, value: any): any {
         if(fieldName in this.props.data) {
             const relatedData = this.props.data[fieldName][value]
-            return relatedData?.name
+            return `${relatedData?.code} -- ${relatedData?.description}`
         }
         return value
     }
 
 
-    renderCell(key: string, index:number, value:any): ReactElement {
+    renderCell(index:number, value:any, key:string = ''): ReactElement {
         return (
             <td 
                 data-name={key}
@@ -218,10 +230,11 @@ class Table extends Component<TableProps, TableState> {
             return (
                 <tr key={index} onClick={(): void => this.props.rowClick(data)}>
                     {Object.entries(data).filter(([key, _]) => {
-                        return key !== "is_instock"
+                        return key !== "stock_type"
                     }).map(([key, value]) => {
-                        return this.renderCell(key, index, value)
+                        return this.renderCell(index, value, key)
                     })}
+                    {this.renderCell(-1, data?.price * data?.quantity)}
                 </tr>    
             )
         })

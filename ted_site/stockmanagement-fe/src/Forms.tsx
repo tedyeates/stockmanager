@@ -18,7 +18,6 @@ export type FormProps = {
 }
 
 type FormState = {
-    startDate: Date
     inputValues: {
         [key: string]: string
     }
@@ -30,7 +29,6 @@ export class Form extends Component<FormProps, FormState> {
     constructor(props: FormProps){
         super(props)
         this.state = {
-            startDate: new Date(),
             inputValues: {},
         }
 
@@ -64,8 +62,8 @@ export class Form extends Component<FormProps, FormState> {
         return (
             <DatePicker 
                 dateFormat='dd/MM/yyyy'
-                selected={this.state.startDate} 
-                onChange={(date: Date) => this.setState({startDate: date})} 
+                selected={this.props.rowData[fieldName] ?? ''}
+                onChange={(date: Date) => this.props.onChange(fieldName, 'text', date)} 
                 customInput={
                     <input type='text' className='form-input react-datepicker-ignore-onclickoutside' value='' />
                 }
@@ -149,6 +147,9 @@ export class Form extends Component<FormProps, FormState> {
      * @returns HTML input field
      */
     checkFieldType(fieldName: string, fieldType: string, choices: string[]): ReactElement {
+        console.log(this.props.rowData)
+        console.log(fieldName)
+        console.log(fieldType)
         switch(fieldType){
             case 'ChoiceField':
                 return this.generateChoiceSelectField(fieldName, choices)

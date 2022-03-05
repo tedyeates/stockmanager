@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import views, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from collections import OrderedDict
 
 from django.utils import timezone
@@ -86,7 +87,6 @@ class FormDataMixin(viewsets.ModelViewSet):
 
 
     def create(self, request):
-        print(request.data)
         # data = request.data.copy()
         # if self.should_cut(data):
         #     return self.bar_cut(data)
@@ -123,7 +123,6 @@ class FormDataMixin(viewsets.ModelViewSet):
         related_data = [
             (name, self.get_indexed_data(data, serializer)) for name, data, serializer in self.get_related_data()
         ]
-
         if page is not None:
             serializer = self.serializer_class(page, many=True)
             response = self.get_paginated_response(serializer.data)
@@ -134,7 +133,6 @@ class FormDataMixin(viewsets.ModelViewSet):
             ]))
         
         serializer = self.serializer_class(self.get_queryset(), many=True)
-
         return Response(OrderedDict([
             ('data', serializer.data),
             *related_data,

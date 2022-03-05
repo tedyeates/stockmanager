@@ -16,5 +16,6 @@ urlpatterns = [
     path('login/', include(login_urls)),
     path('fields/groups', GroupFieldView.as_view()),
     path('fields/items', ItemFieldView.as_view()),
-    path('fields/stocks', StockFieldView.as_view())
+    path('fields/instock', InstockFieldView.as_view()),
+    path('fields/outstock', OutstockFieldView.as_view())
 ]

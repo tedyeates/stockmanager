@@ -59,7 +59,7 @@ function CutFormInput({onChange, index, value, type, onUpdate}:CutFormInputProps
                 <div className="inline-flex">
                     {generateInputFields()}
                 </div>
-                {(type === 'BAR' || type === 'SHEET') && process.env.REACT_APP_CUT_ENABLED ?
+                {(type === 'BAR' || type === 'SHEET') && process.env.REACT_APP_CUT_ENABLED === 'false' ?
                     <div className="inline-flex">
                         <button className="cut-button" key={`plus-${index}`} onClick={event => onUpdate(event, 1)}>
                             <TiPlus/>
@@ -281,11 +281,11 @@ export class CutForm extends Component<CutFormProps, CutFormState> {
         const newValue:number = event.target.valueAsNumber || 0
         const [newSizes, newTotalSize, lockedPair] = this.getNewSizes(newValue, index, sizeIndex)
 
-
-        if(!process.env.REACT_APP_CUT_ENABLED)
+        console.log(newSizes)
+        if(process.env.REACT_APP_CUT_ENABLED === 'false')
             this.props.onChange('size', 'number array', newSizes[0])
         else
-            this.props.onChange('size', 'number array', newSizes[1])
+            this.props.onChange('size', 'number array', newSizes)
 
         this.setState({ 
             sizes: newSizes, 

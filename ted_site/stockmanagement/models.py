@@ -36,11 +36,21 @@ class Item(models.Model):
     item_type = models.CharField(_("Type of material"), choices=ITEM_TYPES, max_length=50, default=OTHER)
     brand = models.CharField(_("Item Brand"), max_length=50, null=True)
     unit = models.CharField(_("Item Unit"), max_length=50, null=True)
+    weight = models.DecimalField(_("Weight KG"), max_digits=50, decimal_places=2, null=True)
+    number_instock = models.IntegerField(_("Number Instock"), default=0)
+    number_outstock = models.IntegerField(_("Number Outstock"), default=0)
+    max_price = models.DecimalField(_("Max Price"), max_digits=50, decimal_places=2, default=0)
+    sum_price = models.DecimalField(_("Sum Price"), max_digits=50, decimal_places=2, default=0)
+    min_price = models.DecimalField(_("Min Price"), max_digits=50, decimal_places=2, default=0)
     group = models.ForeignKey(Group, verbose_name=_("Group"), null=True, on_delete=models.SET_NULL)
 
     class Meta:
         verbose_name = _("Item")
         verbose_name_plural = _("Items")
+
+    def get_average_price(self):
+        return self.sum_price / self.number_instock
+
 
     def __str__(self):
         return str(self.code) + " " + str(self.name)
@@ -54,18 +64,12 @@ class Item(models.Model):
 
 
 class Stock(models.Model):
-
-    date = models.DateTimeField(_("Date"), auto_now=False, auto_now_add=True, blank=True, null=True)
-    modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, blank=True, null=True)
-    invoice_number = models.CharField(_("Invoice Number"), max_length=50)
-    purchase_order_number = models.CharField(_("PO Number"), max_length=50, null=True)
-    pc_job = models.CharField(_("PC Job"), max_length=50, null=True)  # YYXXXX, STOCK = 0000000, No Job -0000001
-    supplier = models.CharField(_("Supplier"), max_length=50, null=True)
+    stock_date = models.DateField(_("Date"), null=True)
+    created_date = models.DateTimeField(_("Date Created"), auto_now=False, auto_now_add=True, blank=True, null=True)
+    modified = models.DateTimeField(_("Date Modified"), auto_now=True, auto_now_add=False, blank=True, null=True)
+    job_id = models.CharField(_("Job ID"), max_length=50, null=True)  # YYXXXX, STOCK = 0000000, No Job -0000001
     item = models.ForeignKey(Item, verbose_name=_("Item Stocked"), null=True, on_delete=models.SET_NULL)
     quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2)
-    price = models.DecimalField(_("Price per Item"), max_digits=50, decimal_places=2, null=True)
-    is_instock = models.BooleanField(_("Item is Instock"), default=True)  # False is Outstock
-    is_current_stock = models.BooleanField(_("Item is currently stocked"), default=True)  # Instock - Outstock
     size = ArrayField(
         models.DecimalField(_("Size"), max_digits=50, decimal_places=2, null=True),
         size=2, null=True
@@ -78,4 +82,35 @@ class Stock(models.Model):
 
     def __str__(self):
         return str(self.item.name) + " " + str(self.quantity)
+
+
+class Instock(Stock):
+
+    invoice_id = models.CharField(_("Invoice ID"), max_length=50, null=True)
+    price = models.DecimalField(_("Price per Item"), max_digits=50, decimal_places=2, null=True)
+    purchase_order_id = models.CharField(_("PO ID"), max_length=50, null=True)
+    supplier = models.CharField(_("Supplier"), max_length=50, null=True)
+
+    class Meta:
+        verbose_name = _("Instock")
+        verbose_name_plural = _("Instocks")
+
+    def __str__(self):
+        return self.invoice_id
+
+
+class Outstock(Stock):
+
+    customer = models.CharField(_("Customer"), max_length=50, null=True)
+    stock_id = models.CharField(_("Stock ID"), max_length=50, null=True)
+    requester = models.CharField(_("Requester"), max_length=50, null=True)
+    department = models.CharField(_("Department"), max_length=50, null=True)
+
+    class Meta:
+        verbose_name = _("Outstock")
+        verbose_name_plural = _("Outstocks")
+
+    def __str__(self):
+        return self.invoice_id
+
 

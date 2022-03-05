@@ -44,13 +44,17 @@ function CreateTab ({onClick}: {onClick: () => void}) {
     )
 }
 
+export type TabData = {
+    name: string
+    type: string
+}
 
 type NavbarProps = {
-    tabs: string[]
-    active: string
+    tabs: TabData[]
+    active: TabData
     showCreateTab: boolean
-    onClick: (name: string) => void
-    openPopup: () => void
+    onClick: (name: string, type: string) => void
+    openPopup: (type: string) => void
 }
 
 function Navbar(props: NavbarProps) {
@@ -64,14 +68,14 @@ function Navbar(props: NavbarProps) {
         >
             <nav>
                 <ul className="items-center justify-between pt-4 text-base lg:flex lg:pt-0">
-                    {props.showCreateTab ? <CreateTab onClick={props.openPopup} /> : <></>}
-                    {props.tabs.map((tab: string, index: number) => {
+                    {props.showCreateTab ? <CreateTab onClick={() => props.openPopup(props.active.type)} /> : <></>}
+                    {props.tabs.map((tab: TabData, index: number) => {
                         return(
                             <Tab
                                 key={index}
-                                name={tab}
-                                active={props.active}
-                                onClick={() => props.onClick(tab)}
+                                name={tab.name}
+                                active={props.active.name}
+                                onClick={() => props.onClick(tab.name, tab.type)}
                             />
                         )
                     })}

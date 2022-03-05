@@ -5,16 +5,17 @@ import { DataType, FieldsDataType, FormDataType } from "./util/types";
 
 import Table from './Table'
 import { Popup } from './Popups'
-import Navbar from './Navbar'
+import Navbar, {TabData} from './Navbar'
 import { AuthContext } from './Login'
 
 
 type AppState = {
     data: FormDataType
     fields: FieldsDataType
-    active: string
+    active: TabData
     rowData: DataType
-    hasLoaded: boolean
+    hasLoadedData: boolean
+    hasLoadedFields: boolean
     isAuthenticated: boolean
 }
 
@@ -29,15 +30,16 @@ class App extends Component<{},AppState> {
                 data: [], 
             },
             fields: [],
-            active: 'instock',
+            active: {name: 'instock', type: 'stocks'},
             rowData: {},
-            hasLoaded: false,
+            hasLoadedData: false,
+            hasLoadedFields: false,
             isAuthenticated: false
         }
     }
 
     componentDidMount(): void {
-        this.getData(this.state.active)
+        this.getData(this.state.active.name, 'stocks')
     }
 
     // TODO: Relook at pagnation and caching/indexing
@@ -64,10 +66,10 @@ class App extends Component<{},AppState> {
     // }
 
     
-    getData = (name: string): void => {
+    getData = (name: string, type:string): void => {
         // const LIMIT = 25
         const AUTH_HEADER = this.context.getAuthHeader()
-        this.setState({ hasLoaded: false })
+        this.setState({ hasLoadedData: false, hasLoadedFields: false })
         
         axios
             .get(`${process.env.REACT_APP_BASE_URL}/api/${name}/`, {
@@ -75,29 +77,28 @@ class App extends Component<{},AppState> {
             })
             .then(res => {
                 this.setState(() => ({
+                    hasLoadedData: true,
                     data: res.data,
-                    active: name,
+                    active: {name: name, type: type},
                 }))
 
+            }).catch(error => {
+                console.log(error.message)
+                console.log(error.response)
             })
-
-            
-
-        let fieldsName = name
-        if(fieldsName === 'instock' || fieldsName === 'outstock')
-            fieldsName = 'stocks'
-
+        
         axios
-            .get(`${process.env.REACT_APP_BASE_URL}/fields/${fieldsName}`, {
+            .get(`${process.env.REACT_APP_BASE_URL}/fields/${name}`, {
                 headers: AUTH_HEADER
             })
             .then(res => {
                 this.setState(() => ({
-                    hasLoaded: true,
+                    hasLoadedFields: true,
                     fields: res.data
                 }))
             }).catch(error => {
                 console.log(error.message)
+                console.log(error.response)
             })
     }
 
@@ -109,11 +110,10 @@ class App extends Component<{},AppState> {
 
     render(){
         const tabs = [
-            'instock',
-            'outstock',
-            'current stock',
-            'groups',
-            'items',
+            {name: 'instock', type: 'stocks'},
+            {name: 'outstock', type: 'stocks'},
+            {name: 'groups', type: 'groups'},
+            {name: 'items', type: 'items'},
         ]
         let popup:any = null
         return (
@@ -123,16 +123,16 @@ class App extends Component<{},AppState> {
                     data={this.state.data}
                     fields={this.state.fields}
                     rowData={this.state.rowData}
-                    title={this.state.active}
-                    canCut={this.state.active === 'instock' || this.state.active === 'outstock'}
+                    active={this.state.active}
+                    canCut={this.state.active.type === 'stocks'}
                     getData={this.getData}
                 />
                 <Navbar
                     tabs={tabs}
                     active={this.state.active}
-                    showCreateTab={this.state.hasLoaded}
-                    onClick={(name: string) => {this.getData(name)}}
-                    openPopup={() => popup.openPopup()}
+                    showCreateTab={this.state.hasLoadedData && this.state.hasLoadedFields}
+                    onClick={(name: string, type: string) => {this.getData(name, type)}}
+                    openPopup={(type: string) => popup.openPopup(type)}
                 />
                 <div
                     className="flex p-5 pt-16 flex-col text-center"
@@ -140,6 +140,7 @@ class App extends Component<{},AppState> {
                 >
                     <Table
                         data={this.state.data}
+                        
                         rowClick={(data) => popup.rowSelect(data)}
                     />
                 </div>

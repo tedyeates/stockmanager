@@ -10,6 +10,7 @@ import { Component } from "react"
 import { CutForm } from "./CutForm"
 import { Form } from "./Forms"
 import { AuthContext } from "./Login";
+import { TabData } from "./Navbar";
 import { title } from "./util/strings"
 import { DataType, FieldsDataType, FormDataType } from "./util/types"
 
@@ -17,9 +18,9 @@ type PopupProps = {
     data: FormDataType
     fields: FieldsDataType
     rowData: DataType
-    title: string
+    active: TabData
     canCut: boolean
-    getData: (name:string) => void
+    getData: (name:string,type:string) => void
 }
 
 type PopupState = {
@@ -97,15 +98,16 @@ export class Popup extends Component<PopupProps, PopupState> {
      * Creates/updates data and then updates table data with new data
      * @param name        Name of router endpoint for Model
      * @param data Contains outstock data to save
+     * @param type Type of data: stocks, groups and items
      */
-    createData(name: string, popupData: DataType): void {
+    createData(name: string, type: string, popupData: DataType): void {
         // Override current data with new data
         const id = popupData?.id ?? -1
         if(id) delete popupData.id
 
         this.checkUpdate(name, popupData, id)
             .then(res => {
-                this.props.getData(name)
+                this.props.getData(name, type)
                 this.setState({
                     errors: {}
                 })
@@ -119,6 +121,10 @@ export class Popup extends Component<PopupProps, PopupState> {
             })
     }
 
+    moveOutstock(data: DataType): void {
+        
+    }
+
 
     /**
      * Saves field value onChange and configures data for being sent to server
@@ -128,7 +134,6 @@ export class Popup extends Component<PopupProps, PopupState> {
      */
     changeField = (fieldName: string, inputType: string, value: any=null): void => {
         value = inputType === 'number' && value !== '' ? parseFloat(value) : value
-        console.log(this.state.rowData)
         // Arrow function ensures this refers to Popup when called from Form
         this.setState(({rowData}) => ({
             rowData: {
@@ -155,7 +160,7 @@ export class Popup extends Component<PopupProps, PopupState> {
         return (
         <div>
             <Dialog open={this.state.open} onClose={this.closePopup}>
-                <DialogTitle>{title(this.props.title)}</DialogTitle>
+                <DialogTitle>{title(this.props.active.name)}</DialogTitle>
                 <DialogContent>
                 <form id="popup-form" className="w-full max-w-lg">
                     <Form 
@@ -181,12 +186,12 @@ export class Popup extends Component<PopupProps, PopupState> {
                 </form>
                 </DialogContent>
                 <DialogActions>
-                    {this.props.title === "instock" ?
+                    {this.props.active.name === "instock" ?
                         <>
                             <Button
                                 variant="outlined"
                                 className="pc-button" 
-                                onClick={() => this.createData(this.props.title, {
+                                onClick={() => this.createData(this.props.active.name, 'stocks', {
                                     ...this.state.rowData, 
                                     id: -1, 
                                     is_instock: false
@@ -210,7 +215,7 @@ export class Popup extends Component<PopupProps, PopupState> {
                     <Button
                         variant="outlined"
                         className="pc-button" 
-                        onClick={() => this.createData(this.props.title, this.state.rowData)}
+                        onClick={() => this.createData(this.props.active.name, this.props.active.type, this.state.rowData)}
                     >
                         Save
                     </Button>
