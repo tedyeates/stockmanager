@@ -5,3 +5,9 @@ __pycache__/
 .vscode
 node_modules/
 ted_site/.env
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+*.xlsx
