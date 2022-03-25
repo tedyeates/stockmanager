@@ -62,13 +62,13 @@ dynamodb.createTable(items, function(err, data) {
 var outstock = {
     TableName: "Outstock",
     KeySchema: [
-        { AttributeName: "Item Code", KeyType: "HASH"},
+        { AttributeName: "ItemCode", KeyType: "HASH"},
         // jobNo
-        { AttributeName: "Job ID", KeyType: "RANGE"}
+        { AttributeName: "JobID", KeyType: "RANGE"}
     ], 
     AttributeDefinitions: [       
-        { AttributeName: "Item Code", AttributeType: "S" },
-        { AttributeName: "Job ID", AttributeType: "S" },
+        { AttributeName: "ItemCode", AttributeType: "S" },
+        { AttributeName: "JobID", AttributeType: "S" },
         //Description
 
     ],
@@ -90,13 +90,13 @@ dynamodb.createTable(outstock, function(err, data) {
 var instock = {
     TableName: "Instock",
     KeySchema: [
-        { AttributeName: "Item Code", KeyType: "HASH"},
+        { AttributeName: "ItemCode", KeyType: "HASH"},
         // Invoice Number
-        { AttributeName: "invoiceNumber", KeyType: "RANGE"}
+        { AttributeName: "InvoiceNumber", KeyType: "RANGE"}
     ], 
     AttributeDefinitions: [   
-        { AttributeName: "Item Code", AttributeType: "S" },    
-        { AttributeName: "Invoice Number", AttributeType: "S"},
+        { AttributeName: "ItemCode", AttributeType: "S" },    
+        { AttributeName: "InvoiceNumber", AttributeType: "S"},
         { AttributeName: "Price", AttributeType: "N" },
 
     ],
@@ -108,7 +108,7 @@ var instock = {
         IndexName: "ItemPriceIndex",
         KeySchema: [
             {
-                AttributeName: "Item Code",
+                AttributeName: "ItemCode",
                 KeyType: "HASH"
             },
             {
