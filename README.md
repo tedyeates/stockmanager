@@ -36,9 +36,9 @@ Copy and paste into .env file
 * Follow guide but if using npm use `npm run build & npm run deploy` after setting deploy to (the suggested code in guide does not work use this instead renaming pcelemac-serverless to your s3 bucket ![image](https://user-images.githubusercontent.com/25617815/150687553-30d6b14d-c518-48c4-83d5-b6c7668b65ca.png)
 
 
-### DynamoDB
+## DynamoDB
 
-## Quick Setup
+### Quick Setup
 Ensure you have the following installed:
 * [JRE](https://java.com/en/download/manual.jsp) 
 * [DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
@@ -48,10 +48,10 @@ To start dynamoDB you need to run  `java -D"java.library.path=./DynamoDBLocal_li
 
 Once running to create tables please refer to [DataSchema.js](server/DataSchema.js) and change the AWS region and endpoint to suit your needs. Also see [loadData.js](server/loadData.js) for how to perform batch writes and updates for dynamoDB including asyncronous programming. [cleanUp.js](server/cleanUp.js) for deleting tables.
 
-## Troubleshoot
+### Troubleshoot
 
 DynamoDB can be very finicky especially on local.
 
-# Status 500 Retryable Errors
+#### Status 500 Retryable Errors
 These can often popup due to multiple simultaneous requests. To avoid this issue when handling large amounts of data use batch functions such as `docClient.batchWrite` instead of `docClient.put`. If you still recieve this issue whilst using batch functions asyncronously ensure you execute each batch function synchronously with the await keyword. An example can be found in function `runBatch` in [loadData.js](server/loadData.js)
 
