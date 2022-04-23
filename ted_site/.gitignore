@@ -6,6 +6,10 @@ __pycache__/
 node_modules/
 ted_site/.env
 
+**/dynamoDB/*.txt
+**/dynamoDB/*.jar
+**/dynamoDB/DynamoDBLocal_lib
+
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml

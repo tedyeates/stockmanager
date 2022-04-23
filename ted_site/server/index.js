@@ -2,7 +2,7 @@ const express = require('express')
 const { getAll, create, get, update } = require('./dynamoQueries')
 
 const app = express()
-const port = 3000
+const port = 8001
 
 
 app.get('/', (req, res) => {
@@ -16,10 +16,12 @@ app.get('/dynamo/:objectType', (req, res) => {
 
     if(keys)
         get(tableName, req.query).then((response) => {
+            console.log(response)
             res.json(response)
         })
     else
         getAll(tableName).then((response) => {
+            console.log(response)
             res.json(response)
         })
 })
@@ -27,12 +29,14 @@ app.get('/dynamo/:objectType', (req, res) => {
 
 app.post('/dynamo/:objectType', (req, res) => {
     const response = create(req.params.objectType, req.body.data)
+    console.log(response)
     res.status(response.status).json(response.data)
 })
 
 
 app.patch('/dynamo/:objectType', (req, res) => {
     const response = update(req.params.objectType, req.query, req.body)
+    console.log(response)
     res.status(response.status).json(response.data)
 })
 
