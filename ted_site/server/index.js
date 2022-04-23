@@ -1,10 +1,11 @@
 const express = require('express')
+const cors = require('cors')
 const { getAll, create, get, update } = require('./dynamoQueries')
 
 const app = express()
 const port = 8001
 
-
+app.use(cors())
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
@@ -14,7 +15,7 @@ app.get('/dynamo/:objectType', (req, res) => {
     const tableName = req.params.objectType
     const keys = req.query
 
-    if(keys)
+    if(Object.keys(keys).length !== 0)
         get(tableName, req.query).then((response) => {
             console.log(response)
             res.json(response)
@@ -23,6 +24,8 @@ app.get('/dynamo/:objectType', (req, res) => {
         getAll(tableName).then((response) => {
             console.log(response)
             res.json(response)
+        }).catch((error) => {
+            console.log(error)
         })
 })
 

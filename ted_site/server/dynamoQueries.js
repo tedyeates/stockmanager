@@ -1,4 +1,5 @@
 var AWS = require("aws-sdk");
+const e = require("express");
 
 AWS.config.update({
     region: "ap-southeast-1",
@@ -12,10 +13,12 @@ exports.getAll = async (tableName) => {
         TableName: tableName,
     };
 
+    console.log(params)
     const scanResults = []
     let items;
     do{
         items =  await docClient.scan(params).promise()
+        console.log(items)
         items.Items.forEach((item) => scanResults.push(item))
         params.ExclusiveStartKey  = items.LastEvaluatedKey
     } while(typeof items.LastEvaluatedKey !== "undefined")
@@ -25,12 +28,29 @@ exports.getAll = async (tableName) => {
 
 
 exports.get = async (tableName, keys) => {
+
     const params = {
         TableName: tableName,
-        Key: keys
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {}
     }
 
-    const results = await docClient.get(params).promise()
+    Object.entries(keys).forEach(([key, value], index) => {
+        if(index === 0){
+            params.ExpressionAttributeNames["#partition"] = key
+            params.ExpressionAttributeValues[":partition"] = value
+            params.KeyConditionExpression = `#partition = :partition`
+        }
+        else {
+            params.ExpressionAttributeNames["#sort"] = key
+            params.ExpressionAttributeValues[":sort"] = value
+            params.KeyConditionExpression = `${params.KeyConditionExpression} and #sort = :sort`
+        }
+    })
+
+
+    console.log(params)
+    const results = await docClient.query(params).promise()
     console.log(results)
     return results
     
