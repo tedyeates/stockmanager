@@ -1,4 +1,4 @@
-var AWS = require("aws-sdk");
+const AWS = require("aws-sdk");
 const e = require("express");
 
 AWS.config.update({
@@ -6,20 +6,22 @@ AWS.config.update({
     endpoint: "http://localhost:8000"
 });
 
-var docClient = new AWS.DynamoDB.DocumentClient();
+const docClient = new AWS.DynamoDB.DocumentClient();
 
 exports.getAll = async (tableName) => {
     const params = {
         TableName: tableName,
-    };
+    }
 
-    console.log(params)
     const scanResults = []
-    let items;
+    let items
     do{
         items =  await docClient.scan(params).promise()
-        console.log(items)
-        items.Items.forEach((item) => scanResults.push(item))
+        items.Items.forEach((item) => {
+            console.log(item)
+            const {info, ...itemNoInfo} = item
+            scanResults.push({...(item.info ?? {}), ...itemNoInfo})
+        })
         params.ExclusiveStartKey  = items.LastEvaluatedKey
     } while(typeof items.LastEvaluatedKey !== "undefined")
     
@@ -58,32 +60,50 @@ exports.get = async (tableName, keys) => {
 
 
 exports.create = (tableName, data) => {
+    data["SumInstock"] = 0
+    data["SumOutstock"] = 0
+    data["SumPrice"] = 0
+
     let params = {
         TableName: tableName,
         Item: data
     }
 
-    docClient.put(params).then((res) => {
-        return {status: 204, data: res}
-    }).catch(err => {
-        console.log(err)
-        return {status: 400, data: err}
-    })
+    return docClient.put(params).promise()
 }
 
 const updateData = (updateInfo) => {
-    return updateInfo.reduce((acc, item, index) => (
-        {
-            UpdateExpressions:`${acc} info.${item.name} = info.${item.name} + :val${index},`,
-            ExpressionAttributeValues: {
-                [`:val${index}`]: item.value
-            }
+    return updateInfo.reduce((acc, item, index) => {
+        let updateExpression = [acc.UpdateExpression, `#${index} = :${index}`]
+        
+        if(item.isAccumulator) 
+            updateExpression[1] =  `#${index} = #${index} + :${index}`
+        
+        if(index === 0) 
+            acc.UpdateExpression = updateExpression.join(' ')
+        else
+            acc.UpdateExpression = updateExpression.join(', ')
+        
+        acc.ExpressionAttributeNames = {
+            ...acc.ExpressionAttributeNames,
+            [`#${index}`]: item.name
         }
-    ), "set")
+
+        acc.ExpressionAttributeValues = {
+            ...acc.ExpressionAttributeValues,
+            [`:${index}`]: item.value
+        }
+
+        return acc
+    }, {
+        UpdateExpression: "set ",
+        ExpressionAttributeValues: {}
+    })
 }
 
 
 exports.update = (tableName, keys, updateInfo) => {
+    console.log(updateInfo)
     const params = {
         TableName: tableName,
         Key: keys,
@@ -91,12 +111,9 @@ exports.update = (tableName, keys, updateInfo) => {
         ...updateData(updateInfo)
     }
 
-    docClient.update(params).then((res) => {
-        return {status: 204, data: res}
-    }).catch(err => {
-        console.log(err)
-        return {status: 400, data: err}
-    })
+    console.log(params)
+
+    return docClient.update(params).promise()
 }
 
 

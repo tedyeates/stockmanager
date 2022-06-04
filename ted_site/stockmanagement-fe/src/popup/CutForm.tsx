@@ -2,7 +2,7 @@ import { ReactElement, Component, ChangeEvent, MouseEvent } from 'react'
 import { TiPlus, TiMinus } from 'react-icons/ti'
 import Divider from '@mui/material/Divider'
 
-import { DataType, OnChangeType } from './util/types'
+import { DataType, OnChangeType } from '../util/types'
 import { Error } from './Errors'
 
 type CutFormSharedProps = {

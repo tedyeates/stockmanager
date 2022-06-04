@@ -2,10 +2,9 @@
 import { TailwindNavbar } from 'tailwind-navbar-react'
 
 import { title } from './util/strings'
-import { TiPlus } from 'react-icons/ti'
-import { AuthContext } from './Login'
-import { useContext } from 'react'
+import { useAuth } from './context/Login'
 import { useNavigate } from 'react-router-dom'
+import { useLoad } from './context/ApiContextManager'
 
 type TabProps = {
     name: string
@@ -31,19 +30,6 @@ function Tab({name, active, onClick}:TabProps) {
 }
 
 
-function CreateTab ({onClick}: {onClick: () => void}) {
-    return (
-        <li className={`hover:bg-blue-600 active:bg-blue-700 bg-blue-500`}>
-            <button
-                className='tab'
-                onClick={onClick}
-            >
-                <TiPlus/>
-            </button>
-        </li>
-    )
-}
-
 export type TabData = {
     name: string
     type: string
@@ -51,15 +37,15 @@ export type TabData = {
 
 type NavbarProps = {
     tabs: TabData[]
-    active: TabData
-    showCreateTab: boolean
-    onClick: (name: string, type: string) => void
-    openPopup: (type: string) => void
 }
 
 function Navbar(props: NavbarProps) {
-    let auth = useContext(AuthContext)
-    let navigate = useNavigate()
+    const auth = useAuth()
+
+    const {active, setActive} = useLoad()
+
+    const navigate = useNavigate()
+
     
     return (
         <TailwindNavbar
@@ -68,14 +54,15 @@ function Navbar(props: NavbarProps) {
         >
             <nav>
                 <ul className="items-center justify-between pt-4 text-base lg:flex lg:pt-0">
-                    {props.showCreateTab ? <CreateTab onClick={() => props.openPopup(props.active.type)} /> : <></>}
                     {props.tabs.map((tab: TabData, index: number) => {
                         return(
                             <Tab
                                 key={index}
                                 name={tab.name}
-                                active={props.active.name}
-                                onClick={() => props.onClick(tab.name, tab.type)}
+                                active={active.name}
+                                onClick={() => {
+                                    setActive(tab)
+                                }}
                             />
                         )
                     })}

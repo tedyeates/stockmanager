@@ -1,39 +1,30 @@
-import { ChangeEvent, Component, ReactElement} from 'react'
+import { ChangeEvent, ReactElement} from 'react'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 
-import { title } from './util/strings'
-import { DataType, FormDataType, OnChangeType, FieldsDataType } from './util/types'
-import { Error } from './Errors'
+import { title } from '../util/strings'
+import { DataType, OnChangeType, FieldsDataType } from '../util/types'
+import { Error, ErrorState } from './Errors'
+import ModelAutocomplete from '../table/ModelAutocomplete';
+import { useRowData } from '../context/PopupContextManager';
+import { useFields } from '../context/FieldContextProvider';
 
 
 export type FormProps = {
-    data: FormDataType
-    fields: FieldsDataType
     onChange: OnChangeType
-    rowData: DataType
-    errors: DataType
+    errors: ErrorState
 }
 
-type FormState = {
-    inputValues: {
-        [key: string]: string
-    }
-}
 
 type Chunk = FieldsDataType
 
-export class Form extends Component<FormProps, FormState> {
-    constructor(props: FormProps){
-        super(props)
-        this.state = {
-            inputValues: {},
-        }
 
-    }
-
+export function Form(props: FormProps) {
+    const fields = useFields()
+    const { rowData } = useRowData()
+    
     /**
      * Creates input field
      * @param {String} inputType Type of input field, text and number conversion supported
@@ -41,14 +32,14 @@ export class Form extends Component<FormProps, FormState> {
      * @param {Object} extras    Add additional attributes to input e.g. step for decimals
      * @returns 
      */
-    generateInputField(inputType: string, fieldName: string, extras?:DataType): ReactElement {
+    function generateInputField(inputType: string, fieldName: string, extras?:DataType): ReactElement {
         return <input 
             type={inputType} 
             name={fieldName} 
             className='form-input' 
             id={fieldName}
-            onChange={(event) => this.props.onChange(fieldName, inputType, event.target.value)}
-            defaultValue={this.props.rowData[fieldName] ?? ''}
+            onChange={(event) => props.onChange(fieldName, inputType, event.target.value)}
+            defaultValue={rowData[fieldName] ?? ''}
             {...extras}
         />
     }
@@ -58,12 +49,23 @@ export class Form extends Component<FormProps, FormState> {
      * @param {String} fieldName Used for field name attribute
      * @returns JSX DatePicker component
      */
-    generateDateField(fieldName: string): ReactElement{
+    function generateDateField(fieldName: string): ReactElement{
+        let selected = rowData[fieldName]
+
+        
+        if(selected === undefined){
+            selected = new Date()
+        }
+        else {
+            let [year, month, day] = selected.split('-')
+            selected = new Date(year, month-1, day)
+        }
+
         return (
             <DatePicker 
                 dateFormat='dd/MM/yyyy'
-                selected={this.props.rowData[fieldName] ?? ''}
-                onChange={(date: Date) => this.props.onChange(fieldName, 'text', date)} 
+                selected={selected}
+                onChange={(date: Date) => props.onChange(fieldName, 'date', date)} 
                 customInput={
                     <input type='text' className='form-input react-datepicker-ignore-onclickoutside' value='' />
                 }
@@ -77,14 +79,11 @@ export class Form extends Component<FormProps, FormState> {
      * @param {String} attrbuttes additional attributes used by Autocomplete tag
      * @returns HTML select with options for each object that can be related
      */
-    generateSelectField(options:any[], attributes:DataType, fieldName:string): ReactElement {
+    function generateSelectField(options:any[], attributes:DataType, fieldName:string): ReactElement {
         // Prevent Material UI undefined error
         if ('value' in attributes && !attributes.value) 
             attributes.value = null
         
-        let inputValue = this.state.inputValues[fieldName]
-        if (!inputValue)
-            inputValue = ""
         return (
             <Autocomplete 
                 className='form-dropdown' 
@@ -96,46 +95,32 @@ export class Form extends Component<FormProps, FormState> {
                         size="small" 
                     />
                 }
-                inputValue={inputValue}
-                onInputChange={
-                    (_, newInputValue) => this.setState(({inputValues})=>({
-                        inputValues: {
-                            ...inputValues,
-                            [fieldName]: newInputValue
-                        }
-                    }))
-                }
                 {...attributes}
             />
         )
     }
 
 
-    generateChoiceSelectField(fieldName:string, choices:string[]): ReactElement {
-        return this.generateSelectField(
+    function generateChoiceSelectField(fieldName:string, choices:string[]): ReactElement {
+        return generateSelectField(
             choices,
             {
-                value: this.props.rowData[fieldName],
-                onChange: (_:ChangeEvent<{}>, newValue:any) => this.props.onChange(fieldName, 'text', newValue),
+                value: rowData[fieldName],
+                onChange: (_:ChangeEvent<{}>, newValue:any) => props.onChange(fieldName, 'text', newValue),
             },
             fieldName
         )
     }
 
-
-    generateModelSelectField(fieldName:string): ReactElement {
-        const dataId = this.props.rowData[fieldName]
-        const options=Object.values(this.props.data[fieldName])
-
-        return this.generateSelectField(
-            options,
-            {
-                value: this.props.data[fieldName][dataId],
-                onChange: (_:ChangeEvent<{}>, newValue:any) => this.props.onChange(fieldName, 'number', newValue?.id),
-                getOptionLabel: (option:any) => option ? (option.name ?? option?.code ?? '') : '',
-            },
-            fieldName
+    function generateModelSelectField(fieldName:string): ReactElement {
+        return (
+            <ModelAutocomplete 
+                modelType={fieldName}
+                value={rowData[fieldName] ?? {}}
+                onChange={props.onChange}
+            />
         )
+
     }
 
 
@@ -146,23 +131,20 @@ export class Form extends Component<FormProps, FormState> {
      * @param {String} choices List of choices for the field if ChoiceField
      * @returns HTML input field
      */
-    checkFieldType(fieldName: string, fieldType: string, choices: string[]): ReactElement {
-        console.log(this.props.rowData)
-        console.log(fieldName)
-        console.log(fieldType)
+    function checkFieldType(fieldName: string, fieldType: string, choices: string[]): ReactElement {
         switch(fieldType){
             case 'ChoiceField':
-                return this.generateChoiceSelectField(fieldName, choices)
+                return generateChoiceSelectField(fieldName, choices)
             case 'DecimalField':
-                return this.generateInputField('number', fieldName, {step: '.01'})
+                return generateInputField('number', fieldName, {step: '.01'})
             case 'IntegerField':
-                return this.generateInputField('number', fieldName)
+                return generateInputField('number', fieldName)
             case 'ForeignKey':
-                return this.generateModelSelectField(fieldName)
+                return generateModelSelectField(fieldName)
             case 'DateField':
-                return this.generateDateField(fieldName)
+                return generateDateField(fieldName)
             default:
-                return this.generateInputField('text', fieldName)
+                return generateInputField('text', fieldName)
         }
     }
 
@@ -174,16 +156,16 @@ export class Form extends Component<FormProps, FormState> {
      * @param {String} choices List of choices for the field if ChoiceField
      * @returns HTML elements field label and field
      */
-    generateField(fieldName: string, fieldType: string, choices: string[]): ReactElement {
+    function generateField(fieldName: string, fieldType: string, choices: string[]): ReactElement {
         return (
             <>
                 <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" htmlFor="grid-first-name">
                     {title(fieldName)}
                 </label>
-                {this.checkFieldType(fieldName, fieldType, choices)}
+                {checkFieldType(fieldName, fieldType, choices)}
                 <Error 
                     fieldName={fieldName}
-                    errors={this.props.errors}
+                    errors={props.errors}
                 />
             </>
         )
@@ -196,7 +178,7 @@ export class Form extends Component<FormProps, FormState> {
      * @param {Integer} size  size of chunks to divide array into 
      * @returns a list of lists containg the same data has array but in chunks
      */
-    chunkArray(array: FieldsDataType, size: number): Chunk[] {
+    function chunkArray(array: FieldsDataType, size: number): Chunk[] {
         let chunkedArray = []
         for(let i = 0; i < array.length; i += size){
             // Autofield on own line
@@ -217,14 +199,14 @@ export class Form extends Component<FormProps, FormState> {
      * @param {Integer} size  length of chunk to size columns correctly
      * @returns size number of fields grouped in a row
      */
-    hideAutoField(chunk: Chunk, index: number, size: number): ReactElement {
+    function hideAutoField(chunk: Chunk, index: number, size: number): ReactElement {
         let [fieldName, fieldType] = chunk[0]
 
         // Hide ID fields
         if(fieldType === 'AutoField' && typeof fieldName === 'string')
             return (
                 <div key={index}>
-                    {this.generateInputField('hidden', fieldName)}
+                    {generateInputField('hidden', fieldName)}
                 </div>
             )
         
@@ -236,7 +218,7 @@ export class Form extends Component<FormProps, FormState> {
                         let [fieldName, fieldType, choices] = field
                         return (
                             <div key={index} className={`w-full md:w-1/${size} px-3 mb-6 md:mb-0`}>
-                                {this.generateField(fieldName, fieldType, choices)}
+                                {generateField(fieldName, fieldType, choices)}
                             </div>
                         )
                     }
@@ -249,14 +231,13 @@ export class Form extends Component<FormProps, FormState> {
     }
 
 
-    render(): ReactElement {
-        const size = 2
-        return (
-            <div>
-                {this.chunkArray(this.props.fields, size).map((chunk, index) => {
-                    return this.hideAutoField(chunk, index, size)
-                })}
-            </div>
-        )
-    }
+    const size = 2
+    return (
+        <div>
+            {chunkArray(fields, size).map((chunk, index) => {
+                return hideAutoField(chunk, index, size)
+            })}
+        </div>
+    )
 }
+

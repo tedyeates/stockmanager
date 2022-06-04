@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -12,8 +12,8 @@ import Typography from '@mui/material/Typography';
 
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from 'axios';
-import { DataType } from './util/types';
-import { ErrorState, hasError, Error } from './Errors';
+import { AuthHeaderType } from '../util/types';
+import { ErrorState, hasError, Error } from '../popup/Errors';
 
 function Copyright(props: any) {
   return (
@@ -33,38 +33,50 @@ interface AuthContextType {
     user: any
     signin: (user: string, token: string, callback: VoidFunction) => void
     getToken: () => string | null
-    getAuthHeader: () => DataType
+    authHeader: {current: AuthHeaderType | undefined}
     signout: (callback: VoidFunction) => void
 }
   
 export let AuthContext = createContext<AuthContextType>(null!)
+
   
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     let [user, setUser] = useState<any>(null)
+    let authHeader = useRef<AuthHeaderType>()
+    let token = useRef<string>()
 
-    let signin = (newUser: string, token: string, callback: VoidFunction) => {
-        setUser(newUser)
-        localStorage.setItem("token", token)
-        callback()
-    }
-    
-    let getToken = () => {
-        return localStorage.getItem("token")
-    }
-
-    let getAuthHeader = () => {
-        return {
-            'Authorization': `Token ${getToken()}`
+    function generateAuthHeader(newToken: string | null) {
+        if(newToken && newToken !== token.current){
+            token.current = newToken
+            authHeader.current = {
+                'Authorization': `Token ${newToken}`
+            }
         }
     }
+    
+    function getToken() {
+        let storedToken = sessionStorage.getItem("token")
+        generateAuthHeader(storedToken)
 
-    let signout = (callback: VoidFunction) => {
-        localStorage.setItem("token", '')
+        return storedToken
+    }
+
+    function signin(newUser: string, newToken: string, callback: VoidFunction){
+        sessionStorage.setItem("token", newToken)
+        setUser(newUser)
+        generateAuthHeader(newToken)
+
+        callback()
+    }
+
+
+    function signout(callback: VoidFunction){
+        sessionStorage.setItem("token", '')
         setUser(null)
         callback()
     }
   
-    let value = { user, signin, getToken, getAuthHeader, signout };
+    let value = { user, signin, getToken, authHeader, signout }
   
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -37,7 +37,7 @@ function createItem(row){
         "Description": row.LIST,
         "Brand": row.BRAND,
         "Unit": row.HI,
-        "Weight": row["WEIGHT KG"],
+        "Weight": parseInt(row["WEIGHT KG"]),
         "SumInstock": 0,
         "SumOutstock": 0,
         "SumPrice": 0

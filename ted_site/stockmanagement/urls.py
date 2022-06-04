@@ -17,5 +17,7 @@ urlpatterns = [
     path('fields/groups', GroupFieldView.as_view()),
     path('fields/items', ItemFieldView.as_view()),
     path('fields/instock', InstockFieldView.as_view()),
-    path('fields/outstock', OutstockFieldView.as_view())
+    path('fields/outstock', OutstockFieldView.as_view()),
+    path('suggestions/<str:model>', SelectFieldSearch.as_view()),
+    path('search/<str:model>', SearchSuggestions.as_view()),
 ]

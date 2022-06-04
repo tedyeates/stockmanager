@@ -10,7 +10,7 @@ import './index.css';
 import '@fontsource/roboto';
 
 import App from './App';
-import { AuthProvider, Login, RequireAuth } from './Login';
+import { AuthProvider, Login, RequireAuth } from './context/Login';
 
 ReactDOM.render(
   <React.StrictMode>

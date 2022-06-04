@@ -48,8 +48,8 @@ function Triangle(props: TriangleProps): ReactElement {
 }
 
 type CircleProps = {
-    color: string
     size: number
+    className?: string
     onClick?: () => void
 }
 
@@ -57,18 +57,16 @@ function Close(props: CircleProps): ReactElement {
     return (
         <button className={`
                 rounded-full 
-                -top-1/4
-                -right-1.5
+                bottom-4
+                -right-1
                 absolute
-                bg-blue-700
                 h-${Math.floor(props.size/2)} 
                 w-${Math.floor(props.size/2)}
                 justify-center
                 flex 
                 items-center
                 text-center
-                text-white
-                hover:bg-blue-800
+                ${props.className}
         `}
         onClick={props.onClick}
         >
@@ -77,9 +75,9 @@ function Close(props: CircleProps): ReactElement {
                 viewBox="0 0 24 24"  
                 fill="none"  
                 stroke="currentColor"  
-                stroke-width="2"  
-                stroke-linecap="round"  
-                stroke-linejoin="round"
+                strokeWidth="2"  
+                strokeLinecap="round"  
+                strokeLinejoin="round"
             >  
                 <line x1="18" y1="6" x2="6" y2="18" />  
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -106,6 +104,16 @@ function Tag ({text, size, color}: TagProps): ReactElement {
     )
 }
 
+function Pill({text, size, color}: TagProps): ReactElement {
+    return (
+        <div
+            className={`bg-${color} h-${size} text-sm text-gray-100 inline-block align-top px-2 p-0.5 rounded-full`}
+        >
+            {text}
+        </div>
+    )
+}
+
 
 type StandardTagProps = TagProps & {
     className?: string
@@ -125,6 +133,7 @@ export function StandardTag(props: StandardTagProps): ReactElement {
 
 
 type ExtendedTagProps = StandardTagProps & ShapeProps & {
+    closeClass?: string
     onClick?: () => void
 }
 
@@ -188,7 +197,23 @@ export function EndTag(props: ExtendedTagProps): ReactElement {
             />
             <Close
                 size={props.size}
+                onClick={props.onClick}
+            />
+        </div>
+    )
+}
+
+export function PillTag(props: ExtendedTagProps): ReactElement {
+    return (
+        <div className={`${props.className} inline-block relative`}>
+            <Pill
+                text={props.text}
+                size={props.size}
                 color={props.color}
+            />
+           <Close
+                className={props.closeClass}
+                size={props.size}
                 onClick={props.onClick}
             />
         </div>

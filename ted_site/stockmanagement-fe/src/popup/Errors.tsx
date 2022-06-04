@@ -14,7 +14,6 @@ type ErrorProps = {
 }
 
 export function Error({fieldName, errors}:ErrorProps):ReactElement {
-    console.log(errors)
     if (fieldName in errors)
         return (
             <div className='text-red-500'>

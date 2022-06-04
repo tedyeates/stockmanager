@@ -1,4 +1,4 @@
-from stockmanagement.models import Stock, Item, Group
+from stockmanagement.models import Instock, Outstock, Stock, Item, Group
 
 from rest_framework.response import Response
 from rest_framework import views, viewsets
@@ -11,13 +11,21 @@ from django.utils import timezone
 
 
 class FormDataMixin(viewsets.ModelViewSet):
-    pagination_class = LimitOffsetPagination
     permission_classes = (IsAuthenticated,) 
 
     @property
     def serializer_class(self):
         """Serializer for model type specified in model"""
         return NotImplemented
+    
+    @property
+    def related_keys(self):
+        return []
+
+    @property
+    def view_serializer_class(self):
+        """Serializer for model type specified in model"""
+        return self.serializer_class
 
     @property
     def can_cut(self):
@@ -67,30 +75,20 @@ class FormDataMixin(viewsets.ModelViewSet):
 
         return self.can_cut and 'size' in data and isinstance(data['size'][0], list)
     
+    def related_object_to_id(self, request, model):
+        for key in self.related_keys:
+            if(key in request.data):
+                print(key)
+                request.data[key] = request.data[key]["id"]
+
 
     def update(self, request, pk=None):
-        """Use custom save if item is cuttable and has been cut
-        If not update normally
-
-        Args:
-            request (dict): Data to be added to system, should contain size if user wants to cut item
-            pk (int, optional): Primary key of model to update. Defaults to None.
-
-        Returns:
-            Response: 201 if successful and 400 if not
-        """
-        # data = request.data.copy()
-        # if self.should_cut(data):
-        #     return self.bar_cut(data, pk=pk)
-
+        self.related_object_to_id(request, self.model)
         return super().update(request)
 
 
     def create(self, request):
-        # data = request.data.copy()
-        # if self.should_cut(data):
-        #     return self.bar_cut(data)
-
+        self.related_object_to_id(request, self.model)
         return super().create(request)
 
 
@@ -110,7 +108,7 @@ class FormDataMixin(viewsets.ModelViewSet):
         if choices:
             return [choice[0] for choice in choices]
         return None
-
+         
 
     def list(self, request):
         """Gets model, field and related data based on model endpoint requested from
@@ -118,25 +116,12 @@ class FormDataMixin(viewsets.ModelViewSet):
         Returns:
             Response: HTTP Response containing model, field and related data
         """
+
         page = self.paginate_queryset(self.get_queryset())
-    
-        related_data = [
-            (name, self.get_indexed_data(data, serializer)) for name, data, serializer in self.get_related_data()
-        ]
-        if page is not None:
-            serializer = self.serializer_class(page, many=True)
-            response = self.get_paginated_response(serializer.data)
-            return Response(OrderedDict([
-                ('next', response.data['next']),
-                ('data', response.data['results']),
-                *related_data,
-            ]))
-        
-        serializer = self.serializer_class(self.get_queryset(), many=True)
-        return Response(OrderedDict([
-            ('data', serializer.data),
-            *related_data,
-        ]))
+
+        serializer = self.view_serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
+            
 
 
 class FieldViewMixin(views.APIView):
@@ -146,6 +131,7 @@ class FieldViewMixin(views.APIView):
     exclude = None
 
     def get_field_type(self, field):
+        print(field)
         if field.choices:
             return 'ChoiceField'
         return field.get_internal_type()

@@ -15,8 +15,14 @@ class Group(models.Model):
     def __str__(self):
         return str(self.name)
 
-    # def get_absolute_url(self):
-    #     return reverse("Group_detail", kwargs={"pk": self.pk})
+
+class Brand(models.Model):
+    modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, blank=True, null=True)
+    name = models.CharField(_("Brand Name"), max_length=50)
+    
+    class Meta:
+        verbose_name = _("Brand")
+        verbose_name_plural = _("Brands")
 
 
 class Item(models.Model):
@@ -24,9 +30,9 @@ class Item(models.Model):
     SHEET = 'SHEET'
     OTHER = 'OTHER'
     ITEM_TYPES = [
-        (BAR, 'Bar'),
-        (SHEET, 'Sheet'),
-        (OTHER, 'Other'),
+        (BAR, 'bar'),
+        (SHEET, 'sheet'),
+        (OTHER, 'other'),
     ]
 
     modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, blank=True, null=True)
@@ -34,7 +40,7 @@ class Item(models.Model):
     name = models.CharField(_("Item Name"), max_length=50, null=True)
     description = models.CharField(_("Item Description"), blank=True, max_length=200)
     item_type = models.CharField(_("Type of material"), choices=ITEM_TYPES, max_length=50, default=OTHER)
-    brand = models.CharField(_("Item Brand"), max_length=50, null=True)
+    brand = models.ForeignKey(Brand, verbose_name=_("Brand"), null=True, on_delete=models.SET_NULL)
     unit = models.CharField(_("Item Unit"), max_length=50, null=True)
     weight = models.DecimalField(_("Weight KG"), max_digits=50, decimal_places=2, null=True)
     number_instock = models.IntegerField(_("Number Instock"), default=0)
@@ -59,7 +65,8 @@ class Item(models.Model):
     def save(self, *args, **kwargs):
         if self.name is None:
             self.name = self.code
-
+        
+        
         super().save(*args, **kwargs)
 
 
@@ -70,15 +77,9 @@ class Stock(models.Model):
     job_id = models.CharField(_("Job ID"), max_length=50, null=True)  # YYXXXX, STOCK = 0000000, No Job -0000001
     item = models.ForeignKey(Item, verbose_name=_("Item Stocked"), null=True, on_delete=models.SET_NULL)
     quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2)
-    size = ArrayField(
-        models.DecimalField(_("Size"), max_digits=50, decimal_places=2, null=True),
-        size=2, null=True
-    )
-
 
     class Meta:
-        verbose_name = _("Stock")
-        verbose_name_plural = _("Stocks")
+        abstract=True
 
     def __str__(self):
         return str(self.item.name) + " " + str(self.quantity)
