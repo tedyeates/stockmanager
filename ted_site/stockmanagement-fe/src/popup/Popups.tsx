@@ -13,15 +13,19 @@ import { useAuth } from "../context/Login";
 import { usePopupToggle, useRowData } from "../context/PopupContextManager";
 import { formatDate, title } from "../util/strings"
 import { DataType } from "../util/types"
+import { useFields } from "../context/FieldContextProvider";
+
+import "../styles/buttons.css"
 
 
 export function Popup() {
     const authContext = useAuth()
 
-    const { active, setActive } = useLoad()
+    const {active, setActive} = useLoad()
+    const {hasLoadedField} = useFields()
 
-    const { isOpen, closePopup } = usePopupToggle()
-    const { rowData, updateRowData } = useRowData()
+    const {isOpen, closePopup} = usePopupToggle()
+    const {rowData, updateRowData, prefillPopup} = useRowData()
 
     const [errors, setErrors] = useState<ErrorState>({})
     
@@ -71,9 +75,9 @@ export function Popup() {
 
     /**
      * Saves field value onChange and configures data for being sent to server
-     * @param {Event}  event     Onchange event triggering function, contains field value
-     * @param {String} fieldName Name of the field to store value against, must be same as server attribute
-     * @param {String} inputType If inputType is a number convert to float
+     * @param {string} fieldName Name of the field to store value against, must be same as server attribute
+     * @param {string} inputType If inputType is a number convert to float
+     * @param {any} value value from filed to update row data
      */
     function changeField(fieldName: string, inputType: string, value: any=null){
         if(inputType === 'number' && value !== '')
@@ -81,17 +85,23 @@ export function Popup() {
         if(inputType === 'date')
             value = formatDate(value)
 
-
-        console.log(fieldName)
-        console.log(value)
-        console.log(rowData)
-
         updateRowData(fieldName, value)
     }
 
+
+    function moveOutstock(){
+        let {id, invoice_id, price, purchase_order_id, supplier, ...newRowData} = rowData
+        console.log(newRowData)
+        setActive({name:"outstock", type:"stock"})
+        prefillPopup(newRowData)
+        
+        // createData("outstock", 'stocks', {...rowData, id: -1})
+    }
+
+
     return (
         <div>
-            <Dialog open={isOpen} onClose={closePopup}>
+            <Dialog open={isOpen && hasLoadedField} onClose={closePopup}>
                 <DialogTitle>{title(active.name)}</DialogTitle>
                 <DialogContent>
                 <form id="popup-form" className="w-full max-w-lg">
@@ -104,37 +114,30 @@ export function Popup() {
                 <DialogActions>
                     {active.name === "instock" ?
                         <>
-                            <Button
-                                variant="outlined"
-                                className="pc-button" 
-                                onClick={() => createData(active.name, 'stocks', {
-                                    ...rowData, 
-                                    id: -1, 
-                                    is_instock: false
-                                })}
+                            <button
+                                className="t-button" 
+                                onClick={moveOutstock}
                             >
                                 Move to Outstock
-                            </Button>
+                            </button>
                             <div style={{flex: '1 0 0'}} />
                         </>
                         :
                         <></>
                         
                     }
-                    <Button 
-                        variant="outlined"
-                        className="pc-button" 
+                    <button 
+                        className="t-button" 
                         onClick={closePopup}
                     >
                         Cancel
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        className="pc-button" 
+                    </button>
+                    <button
+                        className="t-button" 
                         onClick={() => createData(active.name, active.type, rowData)}
                     >
                         Save
-                    </Button>
+                    </button>
                 </DialogActions>
             </Dialog>
         </div>

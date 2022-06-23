@@ -1,19 +1,42 @@
-import * as Types from "../util/types"
+import { createContext, useContext, useReducer, useState } from "react"
+import { ActiveType, ProviderProps } from "../util/types"
 
-import { createContext, useContext,useEffect,useState } from "react"
 
-const PageContext = createContext<Types.PageContextType>({
-    pages: {
+type PagesType = {
+    next: string | null
+    previous: string | null
+    count: number
+}
+
+type CountActionType = {
+    type: "next" | "previous" | "goto"
+    payload?: {newPage: number}
+}
+
+type PageContextType = {
+    pageInfo: PagesType
+    setPageInfo: (page: PagesType) => void
+    currentPage: number
+    updateCurrentPage: (action: CountActionType) => void
+}
+
+type LoadContextType = {
+    active: ActiveType
+    setActive: (newActive: ActiveType) => void
+}
+
+
+const PageContext = createContext<PageContextType>({
+    pageInfo: {
         next: null,
         previous: null,
         count: 0
     },
-    setPages: () => {}
+    setPageInfo: () => {},
+    currentPage: 1,
+    updateCurrentPage: () => {}
 })
-const LoadContext = createContext<Types.LoadContextType>({
-    hasLoadedField: false,
-    hasLoadedData: false,
-    updateHasLoaded: () => {},
+const LoadContext = createContext<LoadContextType>({
     active: {name: 'instock', type: 'stocks'},
     setActive: () => {}
 })
@@ -21,36 +44,36 @@ const LoadContext = createContext<Types.LoadContextType>({
 export const usePaging = () => useContext(PageContext)
 export const useLoad = () => useContext(LoadContext)
 
+function reducer(state: number, action: CountActionType): number {
+    switch(action.type){
+        case "next":
+            return state + 1
+        case "previous":
+            return state - 1
+        case "goto":
+            if(action.payload)
+                return  action.payload.newPage
+            return 1
+        default:
+            throw new Error("Invalid action type")
+    }
+}
 
-export function ApiProvider({ children }: Types.ProviderProps ) {
+export function ApiProvider({ children }: ProviderProps ) {
+    const initialPage = 1
     
-    const [pages, setPages] = useState<Types.PagesType>({
+    const [pageInfo, setPageInfo] = useState<PagesType>({
         next: null,
         previous: null,
         count: 0, 
     })
-    const [hasLoadedField, setHasLoadedField] = useState<boolean>(false)
-    const [hasLoadedData, setHasLoadedData] = useState<boolean>(false)
-    const [active, setActive] = useState<Types.ActiveType>({name: 'instock', type: 'stocks'})
-
-    function updateHasLoaded(name: string, newHasLoaded: boolean){
-        if(name === 'fields')
-            setHasLoadedField(newHasLoaded)
-        if(name === 'data')
-            setHasLoadedData(newHasLoaded)
-    }
-
-    useEffect(() => {
-        if(hasLoadedData && hasLoadedField)
-            setHasLoaded(true)
-        else
-            setHasLoaded(false)
-    }, [hasLoadedData, hasLoadedField])
+    const [active, setActive] = useState<ActiveType>({name: 'instock', type: 'stocks'})
+    const [currentPage, updateCurrentPage] = useReducer(reducer, initialPage)
     
 
     return (
-        <PageContext.Provider value={{pages, setPages}}>
-            <LoadContext.Provider value = {{hasLoaded, updateHasLoaded, active, setActive}}>
+        <PageContext.Provider value={{pageInfo, setPageInfo, currentPage, updateCurrentPage}}>
+            <LoadContext.Provider value = {{active, setActive}}>
                 { children }
             </LoadContext.Provider>
         </PageContext.Provider>

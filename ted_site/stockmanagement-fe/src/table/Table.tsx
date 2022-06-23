@@ -1,4 +1,4 @@
-import { ReactElement, useState } from "react";
+import { ReactElement } from "react";
 import { Decimal } from 'decimal.js'
 
 import { title } from '../util/strings'
@@ -6,30 +6,31 @@ import { DataType } from '../util/types'
 import { useLoad } from "../context/ApiContextManager";
 import { useRowData } from "../context/PopupContextManager";
 import { useData } from "../context/TableContextManager";
+import { EXCLUDED_MODELS } from "../util/constants";
+
+import "../styles/loader.css"
+import { LoadingSpinner } from "./LoadingSpinner";
 
 type ColumnProps = {
     name: string
 }
 
 function TableColumn({name}: ColumnProps){
-    return <th className='px-2 py-4'>{title(name)}</th>
+    return <th className='table-cell text-left p-2 py-3'>{title(name)}</th>
 }
 
 
-
-type TableState = Array<{column: string, data: string}>
-
 function Table() {
 
-    const {data} = useData()
-    const { active } = useLoad()
-    const { rowSelect } = useRowData()
+    const {data, hasLoadedData} = useData()
+    const {active} = useLoad()
+    const {prefillPopup} = useRowData()
 
 
     function renderHeader(): ReactElement {
         return (
             data.length ?
-            <tr key='trhead' className="py-4">
+            <tr key='trhead' className="table-row">
                 {Object.entries(data[0]).filter(([key, _]) => {
                     return key !== "stock_type"
                 }).map(([key, _], index) => {
@@ -64,7 +65,7 @@ function Table() {
         return (
             <td 
                 data-name={key}
-                className='px-8 py-4'
+                className='table-cell text-left p-2 border-b border-slate-300'
                 key={`${key}-${index}`}
             >
                 {checkArray(value)}
@@ -85,9 +86,16 @@ function Table() {
 
 
     function renderBody(): ReactElement[]{
+        let onClickFunction = (data: DataType) => prefillPopup(data)
+        if(EXCLUDED_MODELS.has(active.name))
+            onClickFunction = (data) => null
+
         return data.map((data: DataType, index:number) => {
             return (
-                <tr key={index} onClick={(): void => rowSelect(data)}>
+                <tr 
+                    key={index} className="table-row" 
+                    onClick={() => onClickFunction(data)}
+                >
                     {Object.entries(data).filter(([key, _]) => {
                         return key !== "stock_type"
                     }).map(([key, value]) => {
@@ -100,14 +108,22 @@ function Table() {
     }
 
     return (
-        <table className='table-auto border-collapse shadow-lg mr-3'>
-            <thead key='thead' className='bg-gray-800 text-gray-100'>
-                {renderHeader()}
-            </thead>
-            <tbody key='tbody'>
-                {renderBody()}
-            </tbody>
-        </table>
+        <div className="flex justify-center">
+            {hasLoadedData ? 
+                <table className='table table-auto border-collapse shadow-lg mr-3 w-full'>
+                    <thead key='thead' className='table-header-group bg-gray-800 text-gray-100 text-sm whitespace-nowrap'>
+                        {renderHeader()}
+                    </thead>
+                    <tbody key='tbody' className="table-row-group text-sm">
+                        {renderBody()}
+                    </tbody>
+                </table>
+            :
+                <LoadingSpinner
+                    className="h-12 w-12"
+                />
+            }
+        </div>
     )
 }
 

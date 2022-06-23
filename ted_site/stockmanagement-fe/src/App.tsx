@@ -15,6 +15,7 @@ function App(){
         {name: 'outstock', type: 'stocks'},
         {name: 'groups', type: 'groups'},
         {name: 'items', type: 'items'},
+        {name: 'logs', type: 'logs'}
     ]
     return (
         <ApiProvider>
@@ -22,16 +23,16 @@ function App(){
             <PopupProvider>
                 <FieldProvider>
                     <Popup />
+                    <div
+                        className="flex pt-2 px-5 flex-col text-center"
+                        style={{ minWidth: "100vw" }}
+                    >
+                        <TableProvider>
+                            <TableToolbar />
+                            <Table />
+                        </TableProvider>
+                    </div>
                 </FieldProvider>
-                <div
-                    className="flex p-5 pt-16 flex-col text-center"
-                    style={{ minWidth: "100vw", minHeight: "100vh" }}
-                >
-                    <TableProvider>
-                        <TableToolbar />
-                        <Table />
-                    </TableProvider>
-                </div>
             </PopupProvider>
         </ApiProvider>
     )

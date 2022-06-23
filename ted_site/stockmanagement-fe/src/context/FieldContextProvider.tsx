@@ -1,22 +1,36 @@
 import axios from "axios";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { EXCLUDED_MODELS } from "../util/constants";
 import { FieldsDataType, ProviderProps } from "../util/types";
 import { useLoad } from "./ApiContextManager";
 import { useAuth } from "./Login";
 
-const FieldContext = createContext<FieldsDataType>([])
+
+export type FieldContextType = {
+    fields: FieldsDataType
+    hasLoadedField: boolean
+}
+
+const FieldContext = createContext<FieldContextType>({
+    fields: [],
+    hasLoadedField: false
+})
+
 export const useFields = () => useContext(FieldContext)
 
 export function FieldProvider({children}: ProviderProps) {
     const {authHeader} = useAuth()
     const {active} = useLoad()
-    const {updateHasLoaded} = useLoad()
+    const [hasLoadedField, setHasLoadedField] = useState(false)
 
     const [fields, setFields] = useState<FieldsDataType>([])
 
     const gettingFields = useRef(true)
 
     const getFields = useCallback(() => {
+        setHasLoadedField(false)
+        if(EXCLUDED_MODELS.has(active.name)) return
+
         axios
             .get(`${process.env.REACT_APP_BASE_URL}/fields/${active.name}`, {
                 headers: authHeader.current
@@ -24,7 +38,7 @@ export function FieldProvider({children}: ProviderProps) {
             .then(res => {
                 if( gettingFields.current){
                     console.log(res.data)
-                    updateHasLoaded("fields", true)
+                    setHasLoadedField(true)
 
                     setFields(res.data)
                 }
@@ -32,7 +46,7 @@ export function FieldProvider({children}: ProviderProps) {
                 console.log(error.message)
                 console.log(error.response)
             })
-    }, [authHeader])
+    }, [authHeader, active.name])
 
     // Reload data when active page changes
     useEffect(() => {
@@ -47,7 +61,7 @@ export function FieldProvider({children}: ProviderProps) {
     }, [active.name, active.type, getFields])
 
     return (
-        <FieldContext.Provider value={fields}>
+        <FieldContext.Provider value={{fields, hasLoadedField}}>
             { children }
         </FieldContext.Provider>
     )

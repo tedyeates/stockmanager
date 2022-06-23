@@ -1,0 +1,1 @@
+export const EXCLUDED_MODELS = new Set(["logs"])

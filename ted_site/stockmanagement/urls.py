@@ -10,6 +10,8 @@ router.register(r'groups', GroupViewSet)
 router.register(r'items', ItemViewSet)
 router.register(r'instock', InstockViewSet)
 router.register(r'outstock', OutstockViewSet)
+router.register(r'logs', LogViewSet)
+
 
 urlpatterns = [
     path('api/', include(router.urls)),
@@ -19,5 +21,5 @@ urlpatterns = [
     path('fields/instock', InstockFieldView.as_view()),
     path('fields/outstock', OutstockFieldView.as_view()),
     path('suggestions/<str:model>', SelectFieldSearch.as_view()),
-    path('search/<str:model>', SearchSuggestions.as_view()),
+    path('search/<str:model>', Search.as_view()),
 ]

@@ -5,24 +5,25 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 
 import { title } from '../util/strings'
-import { DataType, OnChangeType, FieldsDataType } from '../util/types'
+import { DataType, FieldsDataType } from '../util/types'
 import { Error, ErrorState } from './Errors'
 import ModelAutocomplete from '../table/ModelAutocomplete';
 import { useRowData } from '../context/PopupContextManager';
 import { useFields } from '../context/FieldContextProvider';
 
+import "../styles/forms.css"
+
 
 export type FormProps = {
-    onChange: OnChangeType
+    onChange: (fieldName: string, inputType: string, value: any) => void
+
     errors: ErrorState
 }
 
 
-type Chunk = FieldsDataType
-
 
 export function Form(props: FormProps) {
-    const fields = useFields()
+    const {fields} = useFields()
     const { rowData } = useRowData()
     
     /**
@@ -39,7 +40,7 @@ export function Form(props: FormProps) {
             className='form-input' 
             id={fieldName}
             onChange={(event) => props.onChange(fieldName, inputType, event.target.value)}
-            defaultValue={rowData[fieldName] ?? ''}
+            value={rowData[fieldName] ?? ''}
             {...extras}
         />
     }
@@ -73,45 +74,6 @@ export function Form(props: FormProps) {
         )
     }
 
-    /**
-     * Returns a select field, used for object relationships
-     * @param {String} options List of fields to populate select box
-     * @param {String} attrbuttes additional attributes used by Autocomplete tag
-     * @returns HTML select with options for each object that can be related
-     */
-    function generateSelectField(options:any[], attributes:DataType, fieldName:string): ReactElement {
-        // Prevent Material UI undefined error
-        if ('value' in attributes && !attributes.value) 
-            attributes.value = null
-        
-        return (
-            <Autocomplete 
-                className='form-dropdown' 
-                options={options}
-                renderInput={(params) => 
-                    <TextField 
-                        {...params} 
-                        variant="outlined" 
-                        size="small" 
-                    />
-                }
-                {...attributes}
-            />
-        )
-    }
-
-
-    function generateChoiceSelectField(fieldName:string, choices:string[]): ReactElement {
-        return generateSelectField(
-            choices,
-            {
-                value: rowData[fieldName],
-                onChange: (_:ChangeEvent<{}>, newValue:any) => props.onChange(fieldName, 'text', newValue),
-            },
-            fieldName
-        )
-    }
-
     function generateModelSelectField(fieldName:string): ReactElement {
         return (
             <ModelAutocomplete 
@@ -133,8 +95,6 @@ export function Form(props: FormProps) {
      */
     function checkFieldType(fieldName: string, fieldType: string, choices: string[]): ReactElement {
         switch(fieldType){
-            case 'ChoiceField':
-                return generateChoiceSelectField(fieldName, choices)
             case 'DecimalField':
                 return generateInputField('number', fieldName, {step: '.01'})
             case 'IntegerField':
@@ -178,7 +138,7 @@ export function Form(props: FormProps) {
      * @param {Integer} size  size of chunks to divide array into 
      * @returns a list of lists containg the same data has array but in chunks
      */
-    function chunkArray(array: FieldsDataType, size: number): Chunk[] {
+    function chunkArray(array: FieldsDataType, size: number): FieldsDataType[] {
         let chunkedArray = []
         for(let i = 0; i < array.length; i += size){
             // Autofield on own line
@@ -199,7 +159,7 @@ export function Form(props: FormProps) {
      * @param {Integer} size  length of chunk to size columns correctly
      * @returns size number of fields grouped in a row
      */
-    function hideAutoField(chunk: Chunk, index: number, size: number): ReactElement {
+    function hideAutoField(chunk: FieldsDataType, index: number, size: number): ReactElement {
         let [fieldName, fieldType] = chunk[0]
 
         // Hide ID fields

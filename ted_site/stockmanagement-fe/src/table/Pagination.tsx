@@ -4,37 +4,26 @@ import { useEffect, useState } from "react"
 import { useData } from "../context/TableContextManager"
 
 export function Pagination(){
+
     const [pageOptions, setOptions] = useState<Array<number>>([])
-    const {pages} = usePaging()
-    const {getData} = useData()
+    const {pageInfo, currentPage, updateCurrentPage} = usePaging()
     const {active} = useLoad()
-    const [currentPage, setCurrentPage] = useState(1)
     
     useEffect(() => {
         const LIMIT = 25
         const NUMBER_PAGES_TO_SHOW = 10
 
-        console.log(pages.count)
-        console.log(currentPage)
-        if (pages.count === 0) {
+        if (pageInfo.count === 0) {
             setOptions([])
             return 
         }
 
         let pageStart = currentPage < 6 ? 1 : currentPage - Math.trunc(NUMBER_PAGES_TO_SHOW / 2) + 1
-        let pagesLeft = Math.ceil(pages.count / LIMIT) - pageStart + 1
+        let pagesLeft = Math.ceil(pageInfo.count / LIMIT) - pageStart + 1
         let pagesToShow = Math.min(pagesLeft, NUMBER_PAGES_TO_SHOW)
-        console.log(pagesToShow)
+
         setOptions([ ...Array(pagesToShow).keys() ].map(i => i + pageStart))
-    }, [currentPage, pages])
-
-    useEffect(() => {
-        getData(currentPage)
-    }, [currentPage, getData])
-
-    useEffect(() => {
-        setCurrentPage(1)
-    }, [active])
+    }, [currentPage, pageInfo])
 
 
     return (
@@ -57,11 +46,11 @@ export function Pagination(){
             <div className="hidden sm:flex-1 sm:inline-flex  sm:justify-end">
                 <div>
                     <nav className="relative z-0 inline-flex rounded-md shadow-sm" aria-label="Pagination">
-                        {pages.previous === null ||
+                        {pageInfo.previous === null ||
                             <button className="relative inline-flex items-center p-2
                                 rounded-l-md border border-gray-300 bg-white text-sm font-medium 
                                 text-gray-500 hover:bg-gray-50"
-                                onClick={() => setCurrentPage(currentPage - 1)}
+                                onClick={() => updateCurrentPage({type: "previous"})}
                             >
                                 <span className="sr-only">Previous</span>
                                 <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
@@ -75,17 +64,17 @@ export function Pagination(){
                                 :
                                     "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                                 }`}
-                                onClick={() => setCurrentPage(option)}
+                                onClick={() => updateCurrentPage({type: "goto", payload: {newPage: option}})}
                             >
                                 {option}
                             </button>
                         ))}
-                        {pages.next === null ||
+                        {pageInfo.next === null ||
                             <button className="relative inline-flex items-center p-2
                                 rounded-r-md border border-gray-300 bg-white text-sm font-medium
                                 text-gray-500 hover:bg-gray-50"
-                                disabled={pages.next === null}
-                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={pageInfo.next === null}
+                                onClick={() => updateCurrentPage({type: "next"})}
                             >
                                 <span className="sr-only">Next</span>
                                 <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />

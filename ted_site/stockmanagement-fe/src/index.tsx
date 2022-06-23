@@ -6,7 +6,7 @@ import {
   Route
 } from "react-router-dom";
 
-import './index.css';
+import './styles/index.css';
 import '@fontsource/roboto';
 
 import App from './App';

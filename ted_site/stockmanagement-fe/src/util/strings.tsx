@@ -12,6 +12,9 @@ export function formatDate(date: Date){
 }
 
 export function formatDateString(date: string){
-    const [day, month, year] = date.split('/')
-    return `${year}-${month}-${day}`
+    const [day, month, year] = date?.split('/')
+
+    if(day && month && year)
+        return `${year}-${month}-${day}`
+    return date
 }

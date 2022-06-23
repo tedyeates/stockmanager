@@ -9,17 +9,22 @@ import { useAuth } from '../context/Login'
 import { DataType } from "../util/types"
 
 
+type AutocompleteValue = DataType & {
+    id: number
+    name: string
+}
+
 type AutocompleteProps = {
     modelType: string
-    value: DataType
-    onChange: (fieldName:string, fieldType:string, newValue:number) => void
+    value: AutocompleteValue
+    onChange: (fieldName:string, fieldType:string, newValue:AutocompleteValue | null) => void
 }
 
 export default function ModelAutocomplete({modelType, value, onChange}: AutocompleteProps){
     const auth = useAuth()
 
     const [inputValue, setInputValue] = useState('')
-    const [options, setOptions] = useState<DataType[]>([value])
+    const [options, setOptions] = useState<AutocompleteValue[]>([value])
     const active = useRef(true)
 
     const suggestions = useMemo(() => {
@@ -29,10 +34,10 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
                     headers: auth.authHeader.current
                 }).then(response => {
                     if(active.current){
-                        let newOptions: DataType[] = []
+                        let newOptions: AutocompleteValue[] = []
                         let foundOption = false
 
-                        response.data.results.forEach((option:DataType) => {
+                        response.data.results.forEach((option:AutocompleteValue) => {
                             if(value.id === option.id)
                                 foundOption = true
                             newOptions.push(option)
@@ -52,6 +57,7 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
     useEffect(() => {
         active.current = true
 
+        console.log(value)
         suggestions(inputValue)
 
         // Cancels setting options if stops loading or is closed
@@ -64,14 +70,14 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
     return (
         <Autocomplete 
             className='form-dropdown'
-            getOptionLabel={(option:any) => option ? (option.name ?? option?.code ?? '') : ''}
+            getOptionLabel={(option:any) => option ? (option.name ?? '') : ''}
             filterOptions={(x) => x}
             options={options}
             autoComplete
             includeInputInList
             filterSelectedOptions
             value={value}
-            onChange={(_, newValue) => {
+            onChange={(_, newValue:AutocompleteValue | null) => {
                 onChange(modelType, 'object', newValue)
             }}
             onInputChange={(_, newInputValue) => {

@@ -12,7 +12,6 @@ import Typography from '@mui/material/Typography';
 
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from 'axios';
-import { AuthHeaderType } from '../util/types';
 import { ErrorState, hasError, Error } from '../popup/Errors';
 
 function Copyright(props: any) {
@@ -28,8 +27,11 @@ function Copyright(props: any) {
   );
 }
 
+type AuthHeaderType = {
+    Authorization: string
+}
 
-interface AuthContextType {
+type AuthContextType = {
     user: any
     signin: (user: string, token: string, callback: VoidFunction) => void
     getToken: () => string | null

@@ -1,6 +1,19 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { formatDateString } from "../util/strings";
-import { DataType, ProviderProps, RowDataContextType, TogglePopupContextType } from "../util/types";
+import { DataType, ProviderProps } from "../util/types";
+
+
+type TogglePopupContextType = {
+    isOpen: boolean
+    closePopup: () => void
+    openPopup: () => void
+}
+
+type RowDataContextType = {
+    rowData: DataType
+    updateRowData: (fieldName: string, value: any) => void
+    prefillPopup: (data: DataType) => void
+}
 
 const DATE_FIELDS = ['stock_date']
 
@@ -13,7 +26,7 @@ const TogglePopupContext = createContext<TogglePopupContextType>({
 const RowDataContext = createContext<RowDataContextType>({
     rowData: {},
     updateRowData: () => {},
-    rowSelect: () => {}
+    prefillPopup: () => {}
 })
 
 export const usePopupToggle = () => useContext(TogglePopupContext)
@@ -39,15 +52,23 @@ export function PopupProvider({ children }: ProviderProps){
         })
     }
 
+    useEffect(()=>{
+        console.log(rowData)
+    }, [isOpen])
+
     /**
      * Callback for click of table row. 
      * Opens popup and stores column data from row
      * @param data row column data
      */
-    function rowSelect(data: DataType) {
+    function prefillPopup(data: DataType) {
+        console.log(data)
         let rowData = {...data}
+        console.log(rowData)
         DATE_FIELDS.forEach((field) => {
-            rowData[field] = formatDateString(rowData[field])
+            if(field in rowData) {
+                rowData[field] = formatDateString(rowData[field])
+            }
         })
         setOpen(true)
         setRowData(rowData)
@@ -55,7 +76,7 @@ export function PopupProvider({ children }: ProviderProps){
 
     return (
         <TogglePopupContext.Provider value={{isOpen, openPopup, closePopup}}>
-            <RowDataContext.Provider value={{rowData, updateRowData, rowSelect}}>
+            <RowDataContext.Provider value={{rowData, updateRowData, prefillPopup}}>
                 { children }
             </RowDataContext.Provider>
         </TogglePopupContext.Provider>
