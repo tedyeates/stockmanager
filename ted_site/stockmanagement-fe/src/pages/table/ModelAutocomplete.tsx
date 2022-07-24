@@ -50,6 +50,7 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
             }, 200)
     }, [modelType, auth.authHeader, value])
 
+
     useEffect(() => {
         let active = true
 
@@ -60,6 +61,7 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
         }
     }, [inputValue])
 
+    
     return (
         <Autocomplete 
             className='form-dropdown'

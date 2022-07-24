@@ -25,7 +25,6 @@ function TableColumn({name}: ColumnProps){
 }
 
 
-
 function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}:TableProps) {
     const {prefillPopup} = useRowData()
 

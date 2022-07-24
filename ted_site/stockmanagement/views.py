@@ -175,7 +175,7 @@ class Search(View):
     def related_suggestions(self, model_name):
         if model_name == "instock" or model_name == "outstock":
             self.serialize_suggestions("item")
-        if model_name == "items": 
+        if model_name == "item": 
             self.serialize_suggestions("brand")
             self.serialize_suggestions("group")
             
