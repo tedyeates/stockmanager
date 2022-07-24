@@ -3,51 +3,46 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import axios, { AxiosResponse } from "axios"
+import axios from "axios"
 import { useState } from "react";
 
-import { useLoad } from "../context/ApiContextManager";
 import { ErrorState } from "./Errors";
 import { Form } from "./Forms";
 import { useAuth } from "../context/Login";
 import { usePopupToggle, useRowData } from "../context/PopupContextManager";
-import { formatDate, title } from "../util/strings"
-import { DataType } from "../util/types"
-import { useFields } from "../context/FieldContextProvider";
+import { formatDate, title } from "util/strings"
 
-import "../styles/buttons.css"
+import "styles/buttons.css"
+import { ChangePageToType, DataType, FieldsDataType, PageName } from "util/types/PageTypes";
 
 
-export function Popup() {
+type PopupProps = {
+    isPageLoading: boolean
+    currentPageName: PageName
+    changePageTo: ChangePageToType
+    modalInputs: FieldsDataType
+}
+
+export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs}: PopupProps) {
     const authContext = useAuth()
-
-    const {active, setActive} = useLoad()
-    const {hasLoadedField} = useFields()
 
     const {isOpen, closePopup} = usePopupToggle()
     const {rowData, updateRowData, prefillPopup} = useRowData()
 
     const [errors, setErrors] = useState<ErrorState>({})
-    
+    const AUTH_HEADER = authContext.authHeader.current
 
-    /**
-     * Check if id provided then update else create
-     * @param name Model to update
-     * @param data Data for update/create
-     * @param id  Id of model to update
-     * @returns 
-     */
-    function checkUpdate(name: string, data: DataType, id:number=-1): Promise<AxiosResponse<any>>{
-        const AUTH_HEADER = authContext.authHeader.current
-        if (id < 0) 
-            return  axios.post(`${process.env.REACT_APP_BASE_URL}/api/${name}/`, data, {
-                headers: AUTH_HEADER
-            })
-        return axios.put(`${process.env.REACT_APP_BASE_URL}/api/${name}/${id}/`, data, {
+    function createModel(modelName: PageName, modelAttributes: DataType){
+        return axios.post(`${process.env.REACT_APP_BASE_URL}/api/${modelName}/`, modelAttributes, {
             headers: AUTH_HEADER
         })
     }
-    
+
+    function updateModel(id:number, modelName: PageName, modelAttributes: DataType){
+        return axios.put(`${process.env.REACT_APP_BASE_URL}/api/${modelName}/${id}/`, modelAttributes, {
+            headers: AUTH_HEADER
+        })
+    }
 
     /**
      * Creates/updates data and then updates table data with new data
@@ -55,22 +50,22 @@ export function Popup() {
      * @param data Contains outstock data to save
      * @param type Type of data: stocks, groups and items
      */
-    function createData(name: string, type: string, popupData: DataType) {
+    function createData(newPageName: PageName, popupData: DataType) {
         console.log(popupData)
         // Override current data with new data
         const id = popupData?.id ?? -1
         if(id) delete popupData.id
 
-        checkUpdate(name, popupData, id)
-            .then(res => {
-                setActive({name: name, type: type})
-                closePopup()
-                setErrors({})
-            })
-            .catch(error => {
-                console.log(error.response)
-                setErrors(error.response.data)
-            })
+        const requestMethod = id < 0 ? createModel(newPageName, popupData) : updateModel(id, newPageName, popupData)
+        requestMethod.then(() => {
+            changePageTo(newPageName)
+            closePopup()
+            setErrors({})
+        })
+        .catch(error => {
+            console.log(error.response)
+            setErrors(error.response.data)
+        })
     }
 
     /**
@@ -91,28 +86,30 @@ export function Popup() {
 
     function moveOutstock(){
         let {id, invoice_id, price, purchase_order_id, supplier, ...newRowData} = rowData
-        console.log(newRowData)
-        setActive({name:"outstock", type:"stock"})
+        newRowData.instock = rowData.id
+        
+        changePageTo("outstock")
         prefillPopup(newRowData)
         
         // createData("outstock", 'stocks', {...rowData, id: -1})
     }
-
+    console.log(isOpen)
 
     return (
         <div>
-            <Dialog open={isOpen && hasLoadedField} onClose={closePopup}>
-                <DialogTitle>{title(active.name)}</DialogTitle>
+            <Dialog open={isOpen && !isPageLoading} onClose={closePopup}>
+                <DialogTitle>{title(currentPageName)}</DialogTitle>
                 <DialogContent>
                 <form id="popup-form" className="w-full max-w-lg">
                     <Form 
                         onChange={changeField}
-                        errors={errors}
+                        errors={errors} 
+                        modalInputs={modalInputs}                    
                     />
                 </form>
                 </DialogContent>
                 <DialogActions>
-                    {active.name === "instock" ?
+                    {currentPageName === "instock" ?
                         <>
                             <button
                                 className="t-button" 
@@ -134,7 +131,7 @@ export function Popup() {
                     </button>
                     <button
                         className="t-button" 
-                        onClick={() => createData(active.name, active.type, rowData)}
+                        onClick={() => createData(currentPageName, rowData)}
                     >
                         Save
                     </button>

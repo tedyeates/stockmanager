@@ -1,5 +1,5 @@
 import csv
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from rest_framework.response import Response
 from rest_framework import views, viewsets
 from rest_framework.permissions import IsAuthenticated
@@ -80,8 +80,6 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
     @cached_property
     def filters(self):
         filters = self.request.GET.copy()
-        print("filters")
-        print(filters)
         for param in self.exclude_from_filters:
             if param in filters:
                 filters.pop(param)
@@ -107,13 +105,11 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
     def related_object_to_id(self, request):
         for key in self.related_keys:
             if(key in request.data and request.data[key] is not None):
-                print(key)
                 request.data[key] = request.data[key]["id"]
 
 
     def update(self, request, pk=None):
         self.related_object_to_id(request)
-        print(request)
         return super().update(request)
 
 
@@ -135,13 +131,10 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
          
 
     def get_queryset(self):
-        print("yo")
-        print(self.filters)
         query = self.model.objects.filter(**self.filters)
         if self.order_by is not None:
             query = query.order_by("-modified")
             
-        print(query)
         return query
     
         
@@ -151,7 +144,7 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
         Returns:
             Response: HTTP Response containing model, field and related data
         """
-        print("hello")
+
         self.data = self.paginate_queryset(self.get_queryset())
         return self.get_paginated_response(self.view_serialized_data)
     
@@ -167,10 +160,8 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
         
         headers = list(self.export_serialized_data[0].keys())
         writer = csv.writer(response)
-        print(headers)
         writer.writerow(headers)
         for data in self.export_serialized_data:
-            print([data[header] for header in headers])
             writer.writerow([data[header] for header in headers])
         
         return response
@@ -185,8 +176,7 @@ class FieldViewMixin(views.APIView):
     exclude = None
 
     def get_field_type(self, field):
-        print(field)
-        if field.choices:
+        if getattr(field, "choices", None):
             return 'ChoiceField'
         return field.get_internal_type()
 
@@ -199,9 +189,17 @@ class FieldViewMixin(views.APIView):
 
     def get(self, request, format=None):
         fields = self.model._meta.get_fields()
-        field_data = [
-            (field.name, self.get_field_type(field), self.compact_choices(field.choices)) for field in fields if field.name not in self.exclude
-        ]
+        field_data = []
+        for field in fields:
+            field_type = self.get_field_type(field)
+            if field.name not in self.exclude:
+                field_type = self.get_field_type(field)
+                field_choices = self.compact_choices(getattr(field, "choices", None))
+                field_data.append({
+                    "fieldName": field.name, "fieldType": field_type, 
+                    "fieldChoices": field_choices
+                })
+
         return Response(field_data)
     
     

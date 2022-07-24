@@ -1,29 +1,26 @@
-import { ChangeEvent, ReactElement} from 'react'
+import {ReactElement} from 'react'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css";
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
 
-import { title } from '../util/strings'
-import { DataType, FieldsDataType } from '../util/types'
+
+import { title } from '../../util/strings'
 import { Error, ErrorState } from './Errors'
 import ModelAutocomplete from '../table/ModelAutocomplete';
 import { useRowData } from '../context/PopupContextManager';
-import { useFields } from '../context/FieldContextProvider';
 
-import "../styles/forms.css"
+import "styles/forms.css"
+import { DataType, FieldsDataType } from '../../util/types/PageTypes';
 
 
 export type FormProps = {
     onChange: (fieldName: string, inputType: string, value: any) => void
-
+    modalInputs:FieldsDataType
     errors: ErrorState
 }
 
 
 
 export function Form(props: FormProps) {
-    const {fields} = useFields()
     const { rowData } = useRowData()
     
     /**
@@ -139,16 +136,18 @@ export function Form(props: FormProps) {
      * @returns a list of lists containg the same data has array but in chunks
      */
     function chunkArray(array: FieldsDataType, size: number): FieldsDataType[] {
+        console.log(array)
         let chunkedArray = []
         for(let i = 0; i < array.length; i += size){
             // Autofield on own line
-            if (array[i][1] === 'AutoField'){
+            if (array[i].fieldType === 'AutoField'){
                 chunkedArray.push([array[i]])
                 i++
             } 
             // Group other rows
             chunkedArray.push(array.slice(i, i + size))
         }
+        console.log(chunkedArray)
         return chunkedArray
     }
 
@@ -160,7 +159,8 @@ export function Form(props: FormProps) {
      * @returns size number of fields grouped in a row
      */
     function hideAutoField(chunk: FieldsDataType, index: number, size: number): ReactElement {
-        let [fieldName, fieldType] = chunk[0]
+        console.log(chunk)
+        let {fieldName, fieldType} = chunk[0]
 
         // Hide ID fields
         if(fieldType === 'AutoField' && typeof fieldName === 'string')
@@ -172,13 +172,13 @@ export function Form(props: FormProps) {
         
         // Display fields in groups
         return (
-            <div key={index} className="flex flex-wrap -mx-3 mb-6">
+            <div key={index} className="flex -mx-3 mb-6">
                 {chunk.map((field, index) => {
                     if(typeof field === 'object'){
-                        let [fieldName, fieldType, choices] = field
+                        let {fieldName, fieldType, fieldChoices} = field
                         return (
                             <div key={index} className={`w-full md:w-1/${size} px-3 mb-6 md:mb-0`}>
-                                {generateField(fieldName, fieldType, choices)}
+                                {generateField(fieldName, fieldType, fieldChoices)}
                             </div>
                         )
                     }
@@ -194,7 +194,7 @@ export function Form(props: FormProps) {
     const size = 2
     return (
         <div>
-            {chunkArray(fields, size).map((chunk, index) => {
+            {chunkArray(props.modalInputs, size).map((chunk, index) => {
                 return hideAutoField(chunk, index, size)
             })}
         </div>

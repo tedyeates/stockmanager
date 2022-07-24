@@ -89,7 +89,6 @@ def load_stock(stock_sheet):
     for row in stock_sheet.iter_rows(min_row=3):
         count+=1
         stock_iv = row[IV_COL].value
-        print(stock_iv)
         if stock_iv is None or stock_iv == "":
             continue
         
@@ -101,7 +100,6 @@ def load_stock(stock_sheet):
         stock_quantity = row[QUANTITY_COL].value
         stock_price = row[PRICE_COL].value
 
-        print(stock_quantity)
         if stock_date is not None and isinstance(stock_date, str):
             stock_date = datetime.strptime(stock_date, '%d-%m-%y')
             
@@ -109,14 +107,9 @@ def load_stock(stock_sheet):
             print("[CRIT] No Quantity")
             continue
         
-        print(stock_price)
-        print(isinstance(stock_price, str))
-        print(isinstance(stock_quantity, str))
-##
         if (isinstance(stock_quantity, str) and not stock_quantity.isdecimal()) or (isinstance(stock_price, str) and not stock_price.isdecimal()):
             continue
 
-        print("create stock")
         try:
             item = Item.objects.get(code=stock_item)
             
@@ -127,15 +120,12 @@ def load_stock(stock_sheet):
             if isinstance(stock_quantity, str):
                 stock_quantity.replace(" ", "")
                 
-            print("item stuff")
             if stock_price is not None:
                 item.max_price = max(item.max_price, stock_price)
                 item.min_price = min(item.min_price, stock_price)
                 item.sum_price = sum([Decimal(item.sum_price), Decimal(stock_price)])
-                print("done sums")
                 item.instock_number += Decimal(1)
-
-            print("created instock")
+                
             Instock.objects.get_or_create(invoice_id=stock_iv, purchase_order_id=stock_po, item=item,
                                         defaults={"stock_date": stock_date,
                                                   "job_id": stock_pc,

@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import {
   BrowserRouter,
   Routes,
@@ -9,24 +9,29 @@ import {
 import './styles/index.css';
 import '@fontsource/roboto';
 
-import App from './App';
-import { AuthProvider, Login, RequireAuth } from './context/Login';
+import App from './pages/App';
 
-ReactDOM.render(
+import { AuthProvider, Login, RequireAuth } from "./pages/context/Login"
+import { PageTypeChangerProvider } from "./pages/context/PageChanger"
+
+const container = document.getElementById('root');
+const root = createRoot(container!); // createRoot(container!) if you use TypeScript
+root.render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
             <Route path="/" element={
               <RequireAuth>
-                <App />
+                <PageTypeChangerProvider>
+                  <App />
+                </PageTypeChangerProvider>
               </RequireAuth>
             } />
           <Route path="/login" element={<Login />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+  </React.StrictMode>
+)
 

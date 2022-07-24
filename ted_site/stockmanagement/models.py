@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Length
 from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
 
@@ -10,10 +11,21 @@ from django.contrib.contenttypes.models import ContentType
 
 SEARCH_RESULTS = 20
 class SearchSuggestionManager(models.Manager):
+    number_results = SEARCH_RESULTS
+    
+    def reset_suggestion_count(self):
+        self.number_results = SEARCH_RESULTS
+    
     def search(self, model_name, search_term):
-        return self.filter(
+        if self.number_results <= 0: return []
+        self.query = self.filter(
             model=model_name, value__icontains=search_term
-        ).order_by("-is_number").distinct("is_number", "name", "value")[:SEARCH_RESULTS]
+        ).annotate(
+            value_length=Length("value")
+        ).order_by("value_length").distinct("name", "value", "value_length")[:self.number_results]
+        self.number_results -= self.query.count()
+        print(self.query)
+        return self.query
     
     
 
@@ -74,37 +86,53 @@ class Searchable(models.Model):
     number_fields = {}
     
     @classmethod
-    def create_suggestion(cls, sender, instance, created, update_fields, **kwargs):
-        print("save")
-        model_name = sender._meta.model_name
-        print(model_name)
-        print(cls.search_fields)
-        print(update_fields)
-        if created:
-            for field in cls.search_fields:
-                print("suggestion created")
-                print(field)
-                print(getattr(instance, field))
-                value = getattr(instance, field)
-                if value is None:
-                    value = ""
-                    
-                is_number = field in cls.number_fields
+    def  create_suggestion(cls, instance, model_name):
+        for field in cls.search_fields:
+            value = getattr(instance, field)
+            if value is None:
+                value = ""
                 
-                SearchSuggestion.objects.create(
-                    model=model_name, name=f"{field}__icontains", display_name=field,
-                    value=value, seperator=SearchSuggestion.EQUALS, instance=instance,
-                    is_number=is_number
-                )
-        else:
-            for field in update_fields:
-                value = getattr(instance, field)
-                if value is None:
-                    value = ""
-                    
-                suggestion = SearchSuggestion.objects.get(display_name=field, instance=instance)
-                suggestion.value = value
-                suggestion.save()
+            is_number = field in cls.number_fields
+            name = field
+            if not is_number:
+                name = f"{field}__icontains"
+            
+            print(ContentType.objects.get_for_model(cls))
+            SearchSuggestion.objects.get_or_create(
+                model=model_name, name=name, value=value,
+                content_type=ContentType.objects.get_for_model(instance).id,
+                object_id=instance.pk,
+                defaults={
+                    "display_name":field, "seperator":SearchSuggestion.EQUALS, 
+                    "instance":instance, "is_number":is_number
+                }
+            )
+        
+    @classmethod
+    def  update_suggestion(cls, instance):
+        for field in cls.search_fields:
+            value = getattr(instance, field)
+            if value is None: value = ""
+                
+            print(ContentType.objects.get_for_model(instance))
+            print(instance)
+            print(field)
+            print(value)
+            suggestion = SearchSuggestion.objects.get(
+                display_name=field, 
+                content_type=ContentType.objects.get_for_model(instance).id,
+                object_id=instance.pk
+            )
+            suggestion.value = value
+            suggestion.save()
+    
+        
+    @classmethod
+    def save_suggestion(cls, sender, instance, created, **kwargs):
+        model_name = sender._meta.model_name
+        if created: return cls.create_suggestion(instance, model_name)
+        cls.update_suggestion(instance)
+            
                 
                 
     @classmethod
@@ -115,7 +143,7 @@ class Searchable(models.Model):
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        post_save.connect(cls.create_suggestion, cls)
+        post_save.connect(cls.save_suggestion, cls)
         post_delete.connect(cls.delete_suggestion, cls)
     
     class Meta:
@@ -235,6 +263,7 @@ class Outstock(Stock):
     stock_id = models.CharField(_("Stock ID"), max_length=50, null=True)
     requester = models.CharField(_("Requester"), max_length=50)
     department = models.CharField(_("Department"), max_length=50, null=True)
+    instock = models.ForeignKey("stockmanagement.Instock", verbose_name=_("Instock"), null=True, on_delete=models.SET_NULL)
 
     class Meta:
         verbose_name = _("Outstock")

@@ -37,13 +37,14 @@ type AuthContextType = {
     getToken: () => string | null
     authHeader: {current: AuthHeaderType | undefined}
     signout: (callback: VoidFunction) => void
+    clearToken: () => void
 }
   
 export let AuthContext = createContext<AuthContextType>(null!)
 
   
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    let [user, setUser] = useState<any>(null)
+    let [user, setUser] = useState<string|null>(null)
     let authHeader = useRef<AuthHeaderType>()
     let token = useRef<string>()
 
@@ -63,6 +64,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return storedToken
     }
 
+    function clearToken() {
+        sessionStorage.removeItem("token")
+        setUser(null)
+        window.location.reload()
+    }
+
     function signin(newUser: string, newToken: string, callback: VoidFunction){
         sessionStorage.setItem("token", newToken)
         setUser(newUser)
@@ -78,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         callback()
     }
   
-    let value = { user, signin, getToken, authHeader, signout }
+    let value = { user, signin, getToken, authHeader, signout, clearToken }
   
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

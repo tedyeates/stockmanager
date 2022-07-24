@@ -5,8 +5,8 @@ import TextField from "@mui/material/TextField"
 import axios from "axios"
 import throttle from 'lodash/throttle'
 
-import { useAuth } from '../context/Login'
-import { DataType } from "../util/types"
+import { useAuth } from 'pages/context/Login'
+import { DataType } from "util/types/PageTypes"
 
 
 type AutocompleteValue = DataType & {
@@ -25,47 +25,40 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
 
     const [inputValue, setInputValue] = useState('')
     const [options, setOptions] = useState<AutocompleteValue[]>([value])
-    const active = useRef(true)
 
     const suggestions = useMemo(() => {
         return throttle(
-            (searchTerm:string) => {
+            (searchTerm:string, active:boolean) => {
                 axios.get( `${process.env.REACT_APP_BASE_URL}/suggestions/${modelType}?search_term=${searchTerm}`, {
                     headers: auth.authHeader.current
                 }).then(response => {
-                    if(active.current){
-                        let newOptions: AutocompleteValue[] = []
-                        let foundOption = false
+                    if(!active) return
+                    
+                    let newOptions: AutocompleteValue[] = []
+                    let foundOption = false
 
-                        response.data.results.forEach((option:AutocompleteValue) => {
-                            if(value.id === option.id)
-                                foundOption = true
-                            newOptions.push(option)
-                        })
+                    response.data.results.forEach((option:AutocompleteValue) => {
+                        if(value.id === option.id) foundOption = true
+                        
+                        newOptions.push(option)
+                    })
 
-                        if(!foundOption){
-                            newOptions.push(value)
-                        }
+                    if(!foundOption) newOptions.push(value)
 
-                        setOptions(newOptions)
-                    }
+                    setOptions(newOptions)
                 })
             }, 200)
     }, [modelType, auth.authHeader, value])
 
-    // Get options on loading
     useEffect(() => {
-        active.current = true
+        let active = true
 
-        console.log(value)
-        suggestions(inputValue)
+        suggestions(inputValue, active)
 
-        // Cancels setting options if stops loading or is closed
         return () => {
-            active.current = false
+            active = false
         }
-    }, [value, inputValue, suggestions])
-
+    }, [inputValue])
 
     return (
         <Autocomplete 

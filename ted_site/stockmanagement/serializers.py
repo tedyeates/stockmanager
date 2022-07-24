@@ -1,37 +1,72 @@
+from collections import OrderedDict
 from rest_framework import serializers
+from rest_framework.fields import SkipField
+from rest_framework.relations import PKOnlyObject
 from django.contrib.auth.models import User
 from auditlog.models import LogEntry
+from django.db.models import Manager
 
 from .models import Brand, Group, Item, Outstock, Stock, Instock, SearchSuggestion
 
 
+class SearchSuggestionListSerializer(serializers.ListSerializer):
+    def to_representation(self, data):
+        """
+        List of object instances -> List of dicts of primitive datatypes.
+        """
+        # Dealing with nested relationships, data can be a Manager,
+        # so, first get a queryset from the Manager if needed
+        iterable = data.all() if isinstance(data, Manager) else data
+        suggestions = []
+        for suggestion in iterable:
+            serialized_suggestion = self.child.to_representation(suggestion)
+            suggestions.append(serialized_suggestion)
+
+        return suggestions
+    
+    class Meta:
+        model = SearchSuggestion
+
 class SearchSuggestionSerializer(serializers.ModelSerializer):
-    def __init__(self, instance=None, data=None, **kwargs):
-        if kwargs.pop("many", False):
-            super().__init__(instance, data, **kwargs)
-        else:
-            self.instance = instance
-            for suggestion in instance:
-                print("suggestion")
-                print(suggestion)
-                serialized_suggestion = super().to_representation(suggestion)
-                print("serialized_suggestion")
-                print(serialized_suggestion)
-                self.data.append(serialized_suggestion)
-                if suggestion.is_number:
-                    self.data.append({
-                        **serialized_suggestion, "seperator": self.Meta.model.GREATER_THAN,
-                        "name": f"{suggestion.name}__{self.Meta.model.DJANGO_GREATER_THAN}"
-                    })
-                    self.data.append({
-                        **serialized_suggestion, "seperator":self.Meta.model.LESS_THAN,
-                        "name": f"{suggestion.name}__{self.Meta.model.DJANGO_LESS_THAN}"
-                    })
-                
+    def __init__(self, *args, prefix=None, **kwargs):
+        self.prefix = prefix
+        super().__init__(*args, **kwargs)
+    
+    
+    def prefix_field(self, field_name, field_value):
+        if self.prefix is None: return field_value
+        if field_name == "name": 
+            return f"{self.prefix}__{field_value}"
+        if field_name == "display_name": 
+            return f"{self.prefix.capitalize()} {field_value}"
+        
+        return field_value
+            
+        
+    def to_representation(self, instance):
+        ret = OrderedDict()
+        fields = self._readable_fields
+        for field in fields:
+            try:
+                attribute = field.get_attribute(instance)
+            except SkipField:
+                continue
+        
+            check_for_none = attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            
+            if check_for_none is None:
+                ret[field.field_name] = None
+            else:
+                field_value = field.to_representation(attribute)
+                ret[field.field_name] = self.prefix_field(field.field_name, field_value)
+
+        return ret
+        
     
     class Meta:
         model = SearchSuggestion
         fields = ("name", "display_name", "value", "model", "seperator")
+        list_serializer_class = SearchSuggestionListSerializer
     
     
     
@@ -160,6 +195,7 @@ class OutstockSerializer(StockSerializer):
     stock_id = serializers.CharField(max_length=50)
     requester = serializers.CharField(max_length=50)
     department = serializers.CharField(max_length=50)
+    instock = serializers.PrimaryKeyRelatedField(queryset=Instock.objects.all())
 
     class Meta(StockSerializer.Meta):
         model = Outstock

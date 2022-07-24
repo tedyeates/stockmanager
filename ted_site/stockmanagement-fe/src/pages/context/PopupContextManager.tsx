@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { formatDateString } from "../util/strings";
-import { DataType, ProviderProps } from "../util/types";
+import { createContext, useContext, useState } from "react";
+import { formatDateString } from "../../util/strings";
+import { DataType } from "../../util/types/PageTypes";
+import { ProviderProps } from "../../util/types/types";
 
 
 type TogglePopupContextType = {
@@ -52,9 +53,6 @@ export function PopupProvider({ children }: ProviderProps){
         })
     }
 
-    useEffect(()=>{
-        console.log(rowData)
-    }, [isOpen])
 
     /**
      * Callback for click of table row. 
@@ -62,15 +60,15 @@ export function PopupProvider({ children }: ProviderProps){
      * @param data row column data
      */
     function prefillPopup(data: DataType) {
-        console.log(data)
         let rowData = {...data}
-        console.log(rowData)
         DATE_FIELDS.forEach((field) => {
             if(field in rowData) {
                 rowData[field] = formatDateString(rowData[field])
             }
         })
-        setOpen(true)
+        openPopup()
+        console.log("ROWDATA")
+        console.log(rowData)
         setRowData(rowData)
     }
 

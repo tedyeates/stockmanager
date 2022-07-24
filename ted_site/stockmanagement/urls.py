@@ -6,18 +6,18 @@ from stockmanagement.views import *
 from login import urls as login_urls
 
 router = DefaultRouter()
-router.register(r'groups', GroupViewSet)
-router.register(r'items', ItemViewSet)
+router.register(r'group', GroupViewSet)
+router.register(r'item', ItemViewSet)
 router.register(r'instock', InstockViewSet)
 router.register(r'outstock', OutstockViewSet)
-router.register(r'logs', LogViewSet)
+router.register(r'log', LogViewSet)
 
 
 urlpatterns = [
     path('api/', include(router.urls)),
     path('login/', include(login_urls)),
-    path('fields/groups', GroupFieldView.as_view()),
-    path('fields/items', ItemFieldView.as_view()),
+    path('fields/group', GroupFieldView.as_view()),
+    path('fields/item', ItemFieldView.as_view()),
     path('fields/instock', InstockFieldView.as_view()),
     path('fields/outstock', OutstockFieldView.as_view()),
     path('suggestions/<str:model>', SelectFieldSearch.as_view()),

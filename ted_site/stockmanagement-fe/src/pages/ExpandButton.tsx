@@ -1,6 +1,5 @@
 import { MouseEventHandler, ReactElement } from "react"
-import { useLoad } from "./context/ApiContextManager"
-import { ProviderProps } from "./util/types"
+import { ProviderProps } from "../util/types/types"
 
 type ExpandButtonProps = {
     text: string
@@ -15,23 +14,8 @@ type ButtonProps = ProviderProps & {
     isDownload?: boolean
 }
 
-function Button({children, className, onClick, isDownload}:ButtonProps){
-    const {active} = useLoad()
-    return (
-        isDownload ?
-            <a className={className} href={`${process.env.REACT_APP_BASE_URL}/api/${active.name}/export/`} download={`${active.name}.csv`}>
-                {children}
-            </a>
-        :
-            <button className={className} onClick={onClick}>
-                {children}
-            </button>
-        
-    )
-}
 
 export function ExpandButton({text, icon, onClick, isDownload}: ExpandButtonProps) {
-    console.log(isDownload)
     return (
         <button 
             className="t-button t-expand flex whitespace-nowrap h-full"

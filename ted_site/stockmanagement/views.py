@@ -77,7 +77,9 @@ class InstockViewSet(FormDataMixin):
         if connected_item.min_price is None or connected_item_price < connected_item.min_price:
             connected_item.min_price = connected_item_price
 
-        connected_item.save()
+        connected_item.save(update_fields=[
+            "instock_number", "sum_price", "max_price", "min_price"
+        ])
         return create_result
     
 
@@ -89,16 +91,16 @@ class OutstockViewSet(FormDataMixin):
     model = Outstock
     related_keys = ["item"]
     can_cut = False
-    
+
 
 class InstockFieldView(FieldViewMixin):
     model = Instock
-    exclude = ['created_date', 'modified', 'size', 'stock_ptr']
+    exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'outstock']
 
 
 class OutstockFieldView(FieldViewMixin):
     model = Outstock
-    exclude = ['created_date', 'modified', 'size', 'stock_ptr']
+    exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'instock']
 
 
 class SelectFieldSearch(View):
@@ -128,21 +130,68 @@ class SelectFieldSearch(View):
     
 
 class Search(View):
+    suggestions = []
+    search_term = ""
+    number_fields = {}
+    def serialize_suggestions(self, model_name, has_prefix=True):
+        prefix = None
+        if has_prefix:
+            prefix = model_name
+        
+        sugested_model = SearchSuggestion.objects.search(model_name, self.search_term)
+        self.suggestions.extend(SearchSuggestionSerializer(sugested_model, prefix=prefix, many=True).data)
     
-    def get(self, request, model):
-        
-        # TODO tidy up
-        model_name = model
-        if model == "items": 
-            model_name = "item"
-        if model == "groups": 
-            model_name = "group"
+    def get_model(self, model):
+        if model == "instock":
+            return Instock
+        if model == "outstock":
+            return Outstock
+        if model == "item":
+            return Item
+        if model == "group":
+            return Group
+
+    def number_suggestion(self, model_name):
+        model = self.get_model(model_name)
+        for field in model.number_fields:
+            self.suggestions.append(OrderedDict([
+                    ("name", f"{field}{SearchSuggestion.DJANGO_GREATER_THAN}"), 
+                    ("display_name", field),
+                    ("value", self.search_term),
+                    ('model', model_name),
+                    ('seperator', SearchSuggestion.GREATER_THAN),
+                ])
+            )
+            self.suggestions.append(OrderedDict([
+                    ("name", f"{field}{SearchSuggestion.DJANGO_LESS_THAN}"), 
+                    ("display_name", field),
+                    ("value", self.search_term),
+                    ('model', model_name),
+                    ('seperator', SearchSuggestion.LESS_THAN),
+                ])
+            )
+ 
+    
+    def related_suggestions(self, model_name):
+        if model_name == "instock" or model_name == "outstock":
+            self.serialize_suggestions("item")
+        if model_name == "items": 
+            self.serialize_suggestions("brand")
+            self.serialize_suggestions("group")
             
-        print(request.GET.get('search_term'))
-        suggestions = SearchSuggestion.objects.search(model_name, request.GET.get('search_term'))
-        serialized_suggestions = SearchSuggestionSerializer(suggestions).data
-                
-        print(serialized_suggestions)
-        print(suggestions)
+            
+    def get(self, request, model):
+        SearchSuggestion.objects.reset_suggestion_count()
         
-        return JsonResponse({'results': serialized_suggestions}, status=200)
+        self.suggestions = []
+        model_name = model
+        self.search_term = request.GET.get('search_term')
+
+        if self.search_term.isnumeric():
+            self.number_suggestion(model_name)
+            
+        self.serialize_suggestions(model_name, has_prefix=False)
+        self.related_suggestions(model_name)
+        
+        self.suggestions.sort(key=lambda suggestion:suggestion["display_name"])
+        return JsonResponse({'results': self.suggestions}, status=200)

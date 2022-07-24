@@ -1,11 +1,10 @@
-import { title } from './util/strings'
-import { useAuth } from './context/Login'
+import { title } from '../util/strings'
+import { useAuth } from '../pages/context/Login'
 import { useNavigate } from 'react-router-dom'
-import { useLoad } from './context/ApiContextManager'
-import { ActiveType } from './util/types'
 
-import "./styles/navbar.css"
+import "styles/navbar.css"
 import { Logo } from './Logo'
+import { ChangePageToType, PageName } from '../util/types/PageTypes'
 
 type TabProps = {
     name: string
@@ -29,17 +28,16 @@ function Tab({name, active, onClick}:TabProps) {
     )
 }
 
-
 type NavbarProps = {
-    tabs: ActiveType[]
+    currentPageName: PageName
+    changePageTo: ChangePageToType
 }
 
-function Navbar(props: NavbarProps) {
+function Navbar({currentPageName, changePageTo}: NavbarProps) {
     const auth = useAuth()
 
-    const {active, setActive} = useLoad()
     const navigate = useNavigate()
-
+    const pageNames:PageName[] = ["instock", "outstock", "group","item","log"]
     
     return (
         <nav className="flex items-center justify-between flex-wrap bg-blue-700 p-2">
@@ -54,14 +52,14 @@ function Navbar(props: NavbarProps) {
             </div>
             <div className="w-full block flex-grow lg:flex lg:items-center lg:w-auto">
                 <div className="text-sm lg:flex-grow">
-                    {props.tabs.map((tab: ActiveType, index: number) => {
+                    {pageNames.map((pageName, index) => {
                         return(
                             <Tab
                                 key={index}
-                                name={tab.name}
-                                active={active.name}
+                                name={pageName}
+                                active={currentPageName}
                                 onClick={() => {
-                                    setActive(tab)
+                                    changePageTo(pageName)
                                 }}
                             />
                         )
