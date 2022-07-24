@@ -1,0 +1,67 @@
+@tailwind base;
+
+@layer base {
+    .dark-outline {
+        @apply dark:border-gray-800;
+    }
+
+    .background-color {
+        @apply bg-gray-50 dark:bg-gray-700;
+    }
+
+    .background-hover-color {
+        @apply hover:bg-gray-100 dark:hover:bg-gray-600;
+    }
+    
+    .background-blue-color {
+        @apply bg-blue-700 dark:bg-blue-700;
+        @apply hover:bg-blue-500 dark:hover:bg-blue-600;
+    }
+
+    .highlighted-background-color {
+        @apply bg-gray-100 dark:bg-gray-600;
+    }
+
+    .text-dark-color {
+        @apply text-gray-900 dark:text-gray-100;
+    }
+
+    .text-blue-color {
+        @apply text-blue-700 dark:text-blue-100;
+        @apply hover:text-blue-100 dark:hover:text-blue-700;
+        @apply border border-blue-700 hover:border-transparent;
+    }
+
+    .text-light-color {
+        @apply text-blue-100;
+    }
+
+
+    body {
+        @apply background-color;
+    }
+
+    .pagination-button {
+        @apply background-color border text-dark-color;
+    }
+
+    .pagination-button:hover {
+        @apply background-hover-color;
+    }
+
+    .pagination-button.active {
+        @apply background-blue-color text-light-color;
+    }
+
+    .pagination-button.active:hover {
+        @apply hover:bg-blue-600 dark:hover:bg-blue-600;
+    }
+
+    .t-button {
+        @apply background-blue-color bg-transparent hover:bg-blue-700;
+        @apply text-blue-color;
+    }
+}
+
+@tailwind components;
+@tailwind utilities;

@@ -34,3 +34,28 @@ Copy and paste into .env file
 [React Hosting on S3](https://medium.com/serverlessguru/deploy-reactjs-app-with-s3-static-hosting-f640cb49d7e6)
 
 * Follow guide but if using npm use `npm run build & npm run deploy` after setting deploy to (the suggested code in guide does not work use this instead renaming pcelemac-serverless to your s3 bucket ![image](https://user-images.githubusercontent.com/25617815/150687553-30d6b14d-c518-48c4-83d5-b6c7668b65ca.png)
+
+
+## DynamoDB
+
+### Quick Setup
+Ensure you have the following installed:
+* [JRE](https://java.com/en/download/manual.jsp) 
+* [DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
+* Run `npm install` to install all aws packages from package.json when in the root directory
+
+To start dynamoDB you need to run  `java -D"java.library.path=./DynamoDBLocal_lib" -jar DynamoDBLocal.jar`. A [PowerShell script](ted_site/server/dynamoDB/dynamoStart.ps1) for this is included in this repo. You can run just by typing `.\dynamoStart.ps1` whilst in PowerShell. Ensure all DynamoDB install files are unpacked into `ted_site/server/dynamoDB`
+
+Once running to create tables please refer to [DataSchema.js](ted_site/server/DataSchema.js) and change the AWS region and endpoint to suit your needs. Also see [loadData.js](ted_site/server/loadData.js) for how to perform batch writes and updates for dynamoDB including asyncronous programming. [cleanUp.js](ted_site/server/cleanUp.js) for deleting tables.
+
+### Troubleshoot
+
+DynamoDB can be very finicky especially on local.
+
+#### Status 500 Retryable Errors
+These can often popup due to multiple simultaneous requests. To avoid this issue when handling large amounts of data use batch functions such as `docClient.batchWrite` instead of `docClient.put`. If you still recieve this issue whilst using batch functions asyncronously ensure you execute each batch function synchronously with the await keyword. An example can be found in function `runBatch` in [loadData.js](server/loadData.js)
+
+####  Powershell Script Cannot be Loaded Because Running Scripts is Disabled
+Open Powershell and run the following command: `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`. You should then change it back to `Set-ExecutionPolicy Restricted -Scope CurrentUser` afterwards for security
+
+
