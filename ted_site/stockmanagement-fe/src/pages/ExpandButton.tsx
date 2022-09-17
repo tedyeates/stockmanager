@@ -1,4 +1,5 @@
 import { MouseEventHandler, ReactElement } from "react"
+import { title } from "util/strings"
 import { ProviderProps } from "../util/types/types"
 
 type ExpandButtonProps = {
@@ -18,11 +19,12 @@ type ButtonProps = ProviderProps & {
 export function ExpandButton({text, icon, onClick, isDownload}: ExpandButtonProps) {
     return (
         <button 
+            aria-label={text}
             className="t-button t-expand flex whitespace-nowrap h-full"
             onClick={onClick}
         >
             {icon}
-            <span className="t-button-text mx-2">{text}</span>
+            <span className="t-button-text mx-2">{title(text)}</span>
         </button>
     )
 }

@@ -75,9 +75,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
                 setPageDataTo(res.data.results)
                 pageDisplayUpdater.updatePageNumbersToDisplay(res.data.count, newPageNumber)
                 pageDisplayUpdater.updateHasPreviousPageTo(res.data.previous)
-                pageDisplayUpdater.updateHasNextPageTo(res.data.next)
-                console.log(pageData)
-                
+                pageDisplayUpdater.updateHasNextPageTo(res.data.next)         
             }).catch(error => {
                 if(error.response.status === 401){
                     setIsPageLoadingTo(false)
@@ -101,8 +99,8 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
                 setModalInputsTo(response.data)
                 setCurrentPageNameTo(newPageName)
             }).catch(error => {
-                console.log(error.message)
-                console.log(error.response)
+                console.error(error.message)
+                console.error(error.response)
             })
     }, [authHeader])
 
@@ -140,7 +138,6 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
 
     const tableLoader = {
         changePageTo(newPageName: PageName) {
-            console.log(newPageName)
             setIsPageLoadingTo(true)
             clearSearchFilters()
             pageNumberUpdater.changePageNumberToFirstPage()

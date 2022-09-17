@@ -115,11 +115,38 @@ if 'RDS_DB_NAME' in os.environ:
             'PORT': os.environ['RDS_PORT'],
         }
     }
+elif config('CYPRESS_DB') == 'ON':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'cypress',
+            'USER': 'postgres',
+            'PASSWORD': 'FHsVKcjoMifQ4W8YYSEu',
+            'HOST': 'localhost',
+            'PORT': '',
+        },
+        'cypress': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'cypress',
+            'USER': 'postgres',
+            'PASSWORD': 'FHsVKcjoMifQ4W8YYSEu',
+            'HOST': 'localhost',
+            'PORT': '',
+        }
+    }
 else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
             'NAME': 'postgres',
+            'USER': 'postgres',
+            'PASSWORD': 'FHsVKcjoMifQ4W8YYSEu',
+            'HOST': 'localhost',
+            'PORT': '',
+        },
+        'cypress': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'cypress',
             'USER': 'postgres',
             'PASSWORD': 'FHsVKcjoMifQ4W8YYSEu',
             'HOST': 'localhost',

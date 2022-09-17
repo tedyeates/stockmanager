@@ -25,6 +25,7 @@ function TableColumn({name}: ColumnProps){
 }
 
 
+
 function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}:TableProps) {
     const {prefillPopup} = useRowData()
 
@@ -127,7 +128,7 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}
                     className="h-12 w-12"
                 />
             :
-                <table className='table table-auto border-collapse shadow-lg mr-3 w-full'>
+                <table aria-label={`${currentPageName} table`} className='table table-auto border-collapse shadow-lg mr-3 w-full'>
                     <thead key='thead' className='table-header-group border border-gray-800 bg-gray-800 text-gray-100 text-sm whitespace-nowrap'>
                         {renderHeader()}
                     </thead>

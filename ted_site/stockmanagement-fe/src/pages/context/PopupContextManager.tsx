@@ -62,13 +62,11 @@ export function PopupProvider({ children }: ProviderProps){
     function prefillPopup(data: DataType) {
         let rowData = {...data}
         DATE_FIELDS.forEach((field) => {
-            if(field in rowData) {
+            if(field in rowData && rowData[field]) {
                 rowData[field] = formatDateString(rowData[field])
             }
         })
         openPopup()
-        console.log("ROWDATA")
-        console.log(rowData)
         setRowData(rowData)
     }
 

@@ -22,7 +22,7 @@ export type FormProps = {
 
 export function Form(props: FormProps) {
     const { rowData } = useRowData()
-    
+    console.log(rowData)
     /**
      * Creates input field
      * @param {String} inputType Type of input field, text and number conversion supported
@@ -51,10 +51,7 @@ export function Form(props: FormProps) {
         let selected = rowData[fieldName]
 
         
-        if(selected === undefined){
-            selected = new Date()
-        }
-        else {
+        if(selected){
             let [year, month, day] = selected.split('-')
             selected = new Date(year, month-1, day)
         }
@@ -62,10 +59,11 @@ export function Form(props: FormProps) {
         return (
             <DatePicker 
                 dateFormat='dd/MM/yyyy'
+                name={fieldName}
                 selected={selected}
                 onChange={(date: Date) => props.onChange(fieldName, 'date', date)} 
                 customInput={
-                    <input type='text' className='form-input react-datepicker-ignore-onclickoutside' value='' />
+                    <input type='text' aria-label={fieldName} className='form-input react-datepicker-ignore-onclickoutside' value='' />
                 }
             />
         )
@@ -136,7 +134,6 @@ export function Form(props: FormProps) {
      * @returns a list of lists containg the same data has array but in chunks
      */
     function chunkArray(array: FieldsDataType, size: number): FieldsDataType[] {
-        console.log(array)
         let chunkedArray = []
         for(let i = 0; i < array.length; i += size){
             // Autofield on own line
@@ -147,7 +144,7 @@ export function Form(props: FormProps) {
             // Group other rows
             chunkedArray.push(array.slice(i, i + size))
         }
-        console.log(chunkedArray)
+
         return chunkedArray
     }
 
@@ -159,7 +156,6 @@ export function Form(props: FormProps) {
      * @returns size number of fields grouped in a row
      */
     function hideAutoField(chunk: FieldsDataType, index: number, size: number): ReactElement {
-        console.log(chunk)
         let {fieldName, fieldType} = chunk[0]
 
         // Hide ID fields
@@ -177,7 +173,7 @@ export function Form(props: FormProps) {
                     if(typeof field === 'object'){
                         let {fieldName, fieldType, fieldChoices} = field
                         return (
-                            <div key={index} className={`w-full md:w-1/${size} px-3 mb-6 md:mb-0`}>
+                            <div key={index} className={`input-container w-full md:w-1/${size} px-3 mb-6 md:mb-0`}>
                                 {generateField(fieldName, fieldType, fieldChoices)}
                             </div>
                         )

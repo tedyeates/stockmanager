@@ -80,7 +80,7 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
             }}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             renderInput={(params) => 
-                <TextField {...params} variant='outlined' size='small'/>
+                <TextField {...params} name={modelType} variant='outlined' size='small'/>
             }
 
         />

@@ -3,7 +3,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import axios from "axios"
+import axios, { AxiosResponse } from "axios"
 import { useState } from "react";
 
 import { ErrorState } from "./Errors";
@@ -14,6 +14,7 @@ import { formatDate, title } from "util/strings"
 
 import "styles/buttons.css"
 import { ChangePageToType, DataType, FieldsDataType, PageName } from "util/types/PageTypes";
+import { INSTOCK_EXCLUDE_FIELDS } from "util/constants";
 
 
 type PopupProps = {
@@ -21,6 +22,12 @@ type PopupProps = {
     currentPageName: PageName
     changePageTo: ChangePageToType
     modalInputs: FieldsDataType
+}
+
+type requestMethodParameters = {
+    id?:number
+    modelName: PageName
+    ModelAttributes: DataType
 }
 
 export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs}: PopupProps) {
@@ -32,16 +39,22 @@ export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs
     const [errors, setErrors] = useState<ErrorState>({})
     const AUTH_HEADER = authContext.authHeader.current
 
-    function createModel(modelName: PageName, modelAttributes: DataType){
+    function createModelOfType(modelName: PageName, modelAttributes: DataType): Promise<AxiosResponse<any>>{
         return axios.post(`${process.env.REACT_APP_BASE_URL}/api/${modelName}/`, modelAttributes, {
             headers: AUTH_HEADER
         })
     }
 
-    function updateModel(id:number, modelName: PageName, modelAttributes: DataType){
+    function updateModelOfType(id:number, modelName: PageName, modelAttributes: DataType): Promise<AxiosResponse<any>> {
+        console.log(id)
         return axios.put(`${process.env.REACT_APP_BASE_URL}/api/${modelName}/${id}/`, modelAttributes, {
             headers: AUTH_HEADER
         })
+    }
+
+    function getRequestMethodFor<T>(id: number|undefined, newPageName:PageName, popupData: DataType): Promise<AxiosResponse<any>>{
+        if(id === undefined) return createModelOfType(newPageName, popupData)
+        return updateModelOfType(id, newPageName, popupData)
     }
 
     /**
@@ -50,20 +63,17 @@ export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs
      * @param data Contains outstock data to save
      * @param type Type of data: stocks, groups and items
      */
-    function createData(newPageName: PageName, popupData: DataType) {
-        console.log(popupData)
-        // Override current data with new data
-        const id = popupData?.id ?? -1
-        if(id) delete popupData.id
+    function createDataFor(newPageName: PageName, popupData: DataType) {
 
-        const requestMethod = id < 0 ? createModel(newPageName, popupData) : updateModel(id, newPageName, popupData)
-        requestMethod.then(() => {
+        // Override current data with new data
+        let {id, ...newPopupData} = popupData
+        console.log(id)
+        getRequestMethodFor(id, newPageName, newPopupData).then(() => {
             changePageTo(newPageName)
             closePopup()
             setErrors({})
         })
         .catch(error => {
-            console.log(error.response)
             setErrors(error.response.data)
         })
     }
@@ -74,33 +84,42 @@ export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs
      * @param {string} inputType If inputType is a number convert to float
      * @param {any} value value from filed to update row data
      */
-    function changeField(fieldName: string, inputType: string, value: any=null){
+    function changeField(fieldName: string, inputType: string, value: any=undefined){
         if(inputType === 'number' && value !== '')
             value = parseFloat(value)
-        if(inputType === 'date')
+        if(inputType === 'date' && value){
             value = formatDate(value)
+        }
 
         updateRowData(fieldName, value)
     }
 
 
     function moveOutstock(){
-        let {id, invoice_id, price, purchase_order_id, supplier, ...newRowData} = rowData
-        newRowData.instock = rowData.id
+        let newRowData = Object.assign({}, rowData)
+
+        INSTOCK_EXCLUDE_FIELDS.forEach(fieldName => {
+            if(fieldName in newRowData)
+                delete newRowData[fieldName]
+        })
+
         
         changePageTo("outstock")
         prefillPopup(newRowData)
         
         // createData("outstock", 'stocks', {...rowData, id: -1})
     }
-    console.log(isOpen)
 
     return (
         <div>
             <Dialog open={isOpen && !isPageLoading} onClose={closePopup}>
                 <DialogTitle>{title(currentPageName)}</DialogTitle>
-                <DialogContent>
-                <form id="popup-form" className="w-full max-w-lg">
+                <DialogContent aria-label={`create/edit ${currentPageName} popup`}>
+                <form
+                    name={`${currentPageName}-form`}
+                    aria-label={`create/edit ${currentPageName} form`} 
+                    id="popup-form" className="w-full max-w-lg"
+                >
                     <Form 
                         onChange={changeField}
                         errors={errors} 
@@ -124,14 +143,16 @@ export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs
                         
                     }
                     <button 
+                        name="cancel-button"
                         className="t-button" 
                         onClick={closePopup}
                     >
                         Cancel
                     </button>
                     <button
+                        name="save-button"
                         className="t-button" 
-                        onClick={() => createData(currentPageName, rowData)}
+                        onClick={() => createDataFor(currentPageName, rowData)}
                     >
                         Save
                     </button>

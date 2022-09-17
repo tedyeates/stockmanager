@@ -21,13 +21,13 @@ root.render(
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-            <Route path="/" element={
-              <RequireAuth>
-                <PageTypeChangerProvider>
-                  <App />
-                </PageTypeChangerProvider>
-              </RequireAuth>
-            } />
+          <Route path="/" element={
+            <RequireAuth>
+              <PageTypeChangerProvider>
+                <App />
+              </PageTypeChangerProvider>
+            </RequireAuth>
+          } />
           <Route path="/login" element={<Login />} />
         </Routes>
       </AuthProvider>

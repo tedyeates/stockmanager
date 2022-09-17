@@ -22,4 +22,7 @@ urlpatterns = [
     path('fields/outstock', OutstockFieldView.as_view()),
     path('suggestions/<str:model>', SelectFieldSearch.as_view()),
     path('search/<str:model>', Search.as_view()),
+    path('cypress/instock', CypressInstock.as_view()),
+    path('cypress', Cypress.as_view()),
+    
 ]

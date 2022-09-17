@@ -57,10 +57,10 @@ export function TableToolbar(){
                 removeSearchFilter={pageTypeChanger.tableLoader.removeSearchFilter} 
             />
             <div className="h-1/2 flex">
-                {pageTypeChanger.isPageLoading &&
+                {!pageTypeChanger.isPageLoading &&
                     <div className="mx-2">
                         <ExpandButton
-                            text={`Create ${title(pageTypeChanger.currentPageName)}`}
+                            text={`create ${pageTypeChanger.currentPageName}`}
                             icon={<FaPlus/>}
                             onClick={openPopup}
                         />
@@ -68,7 +68,7 @@ export function TableToolbar(){
                 }
                 <div className="mr-2">
                     <ExpandButton
-                        text={isExportDownloading ? "dowloading..." : "Export CSV"}
+                        text={isExportDownloading ? "dowloading..." : "export CSV"}
                         icon={isExportDownloading ? <LoadingSpinner className="h-4 w-4" /> : <FaFileDownload />}
                         onClick={() => exportToCSV()}
                     />

@@ -110,7 +110,7 @@ export function RequireAuth({ children }: { children: JSX.Element }) {
 
 type LocationState = {
     from: { pathname: string }
-}
+} | undefined
 
 
 export function Login() {
@@ -120,8 +120,8 @@ export function Login() {
 
     const [errors, setErrors] = useState<ErrorState>()
 
-    const { from } = location.state as LocationState
-    let path = from?.pathname || "/";
+    let state = location.state as LocationState
+    let path = state?.from?.pathname || "/";
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

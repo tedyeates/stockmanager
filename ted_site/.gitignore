@@ -5,6 +5,7 @@ __pycache__/
 .vscode
 node_modules/
 ted_site/.env
+prod/.env
 
 **/dynamoDB/*.txt
 **/dynamoDB/*.jar

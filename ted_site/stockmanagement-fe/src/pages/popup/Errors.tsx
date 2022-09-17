@@ -16,7 +16,7 @@ type ErrorProps = {
 export function Error({fieldName, errors}:ErrorProps):ReactElement {
     if (fieldName in errors)
         return (
-            <div className='text-red-500'>
+            <div aria-label={`error message`} className='text-red-500'>
                 {errors[fieldName][0]}
             </div>
         )
