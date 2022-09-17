@@ -22,7 +22,7 @@ export type FormProps = {
 
 export function Form(props: FormProps) {
     const { rowData } = useRowData()
-    console.log(rowData)
+    
     /**
      * Creates input field
      * @param {String} inputType Type of input field, text and number conversion supported
