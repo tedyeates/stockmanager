@@ -48,6 +48,7 @@ Cypress.Commands.add('navbarOpen', (tab) => {
 
     cy.get(`button[aria-label="view ${tab}"]`)
         .then((button) => {
+            // If small screen open sidemenu before clicking tab
             if(!button.is(':visible'))
                 cy.get('button[aria-label="open menu"]').click()
             cy.get(`button[aria-label="view ${tab}"]`).click()
@@ -74,6 +75,7 @@ Cypress.Commands.add('setupTests', (model, shouldAddModels=true, url=Cypress.env
         token = response.body.token
         sessionStorage.setItem('token', token)
 
+        // Wipe database and add default data
         cy.request({
             method: 'DELETE', 
             url: Cypress.env('cypressUrl'),
@@ -103,26 +105,35 @@ Cypress.Commands.add('setupTests', (model, shouldAddModels=true, url=Cypress.env
 
 Cypress.Commands.add('getInputByType', (input:HTMLInputElement, values=null, isUpdate=false) => {
         let name = input.getAttribute('name')
+        // must contain name to get value
         if(name === null || name === 'id') return cy.wrap('')
 
         if(input.hasAttribute('autocomplete')){
+            // open drop down on autocomplete
             cy.wrap(input).click()
             
+            // If value specified, clear current value and select option with
+            // same name as value specified
             if(values && name in values){
                 cy.wrap(input).clear().type(values[name])
                 cy.get('li').contains(values[name]).click()
                 return cy.wrap('')
             }
 
+            // If update and no value specified don't need to touch it
+            // already exists
             if(isUpdate) return cy.wrap('')
             
+            // select first item
             cy.get('li[data-option-index="0"]').click()
             return cy.wrap('')
         }
 
+        // get value input for field if specified, trust value is correct type
         if(values && name in values) return values[name]
         if(isUpdate) return cy.wrap('') // Only enter values to inputs that need to be updated
 
+        // Default stock date for create
         if(name === "stock_date") return cy.wrap('20/11/1996')
 
         if(input.getAttribute('type') === 'number') return cy.wrap('10')
@@ -143,6 +154,8 @@ Cypress.Commands.add('inputDataIntoForm', (formSelector, values=null, isUpdate=f
                 let name = input.getAttribute('name')
                 if(name === null) return
                 
+                // Get values chosen for test and input it into form
+                // Store data for later testing against in formData
                 cy.getInputByType(input, values, isUpdate).then((value) => {
                     if(value === '' || name ===null) return
 
@@ -154,7 +167,8 @@ Cypress.Commands.add('inputDataIntoForm', (formSelector, values=null, isUpdate=f
         })
 
     cy.get('button[name="save-button"]').click()
-
+    
+    // return data that should have been entered
     return cy.wrap(formData)
 })
 
@@ -165,6 +179,7 @@ Cypress.Commands.add('testTable', {
     let row = cy.get(`${tableSelector} tbody tr`)
         .should('be.visible')
     
+    // if row specified get row with cell equal to id (name of cell)
     if(id) 
         row = row.contains(id).parent()
     else 
@@ -188,6 +203,9 @@ function getCreateSelector(model:string, createSelectorButton: string | undefine
     return createSelectorButton
 }
 
+/**
+ * Get form, open form button and table of where data will appear
+ */
 Cypress.Commands.add('testStockInputFor', (model, createSelectorButton) => {
     const formSelector = `form[name="${model}-form"]`
     const createSelector = getCreateSelector(model, createSelectorButton)
@@ -199,11 +217,12 @@ Cypress.Commands.add('testStockInputFor', (model, createSelectorButton) => {
 Cypress.Commands.add('withInputData', {
     prevSubject: true,
 }, ({formSelector, createSelector, tableSelector}, inputValues, isUpdate=false, shouldTestTable=true) => {
-    cy.get(createSelector).click()
+    cy.get(createSelector).click() // Open form
     const inputData = cy.inputDataIntoForm(formSelector, inputValues, isUpdate)
     
     if(shouldTestTable) {
         cy.get(formSelector).should('not.exist')
+        // Test table contains values inputted into form
         inputData.testTable(tableSelector)
     }
 })
