@@ -158,9 +158,18 @@ def load_items(writer, item_sheet):
                                                             "weight": item_weight})
 
 def get_min_price(stock_price, item):
-    if item.min_price == -1:
+    if item.min_price == -1 or item.min_price is None:
         return stock_price
+    if stock_price is None:
+        return item.min_price
     return min(item.min_price, stock_price)
+
+def get_max_price(stock_price, item):
+    if item.max_price == -1 or item.max_price is None:
+        return stock_price
+    if stock_price is None:
+        return item.max_price
+    return max(item.max_price, stock_price)
 
 
 def load_instock(writer, stock_sheet):
@@ -229,7 +238,7 @@ def load_instock(writer, stock_sheet):
         
         total_price = Decimal(stock_price) * Decimal(stock_quantity)
         item.min_price = get_min_price(stock_price, item)
-        item.max_price = max(item.max_price, stock_price)
+        item.max_price = get_max_price(stock_price, item)
         item.sum_price = sum([Decimal(item.sum_price), total_price])
         item.quantity += stock_quantity
         item.instock_number += Decimal(1)

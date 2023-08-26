@@ -7,7 +7,7 @@ from django.db.models import Q, Max, Min
 from django.utils.translation import gettext as _
 from rest_framework. serializers import ValidationError
 
-from auditlog.models import LogEntry
+# from auditlog.models import LogEntry
 
 from stockmanagement.models import Outstock, Item, Group, Instock, Brand, SearchSuggestion
 from stockmanagement.models import SearchSuggestion
