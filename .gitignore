@@ -5,7 +5,8 @@ __pycache__/
 .vscode
 node_modules/
 ted_site/.env
-**/.venv
+**/.venv*
+
 www/
 *.csv
 
