@@ -1,12 +1,34 @@
-from app import db
+from . import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import validates 
 from werkzeug.security import generate_password_hash, check_password_hash
+from email_validator import validate_email, EmailNotValidError
+from flask_login import UserMixin
 
 
-class User(db.Model):
+permission_user = db.Table(
+    'permission_user', 
+    db.Model.metadata,
+    db.Column('permission_id', db.Integer, db.ForeignKey('permission.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+)
+
+class Permission(db.Model):
+    __tablename__ = 'permission'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), index=True, unique=True)
+    
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return '<Permission {}>'.format(self.name)
+
+
+class User(UserMixin, db.Model):
     __tablename__ = 'user'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -14,11 +36,32 @@ class User(db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password = db.Column(db.String(128))
     
+    permissions = db.relationship(
+        "Permission", backref="permission_users", secondary=permission_user
+    )
+    
+    def has_permission(self, permission):
+        for user_permission in self.permissions:
+            if user_permission.name == permission:
+                return True
+            
+        return False
+    
+    def check_email(self, email, check_deliverability=False):
+        try:
+            emailinfo = validate_email(
+                email, check_deliverability=check_deliverability
+            )
+            
+            return emailinfo.normalized
+        except EmailNotValidError as e:
+            raise AssertionError(str(e))
+        
     def check_password(self, password):
         return check_password_hash(self.password, password)
 
     def __init__(self, email, password):
-        self.email = email
+        self.email = self.check_email(email, False)
         self.password = generate_password_hash(password)
 
     def __repr__(self):
@@ -85,6 +128,7 @@ class Instock(Stock):
     def __repr__(self):
         return '<Instock {}>'.format(self.id)    
 
+
 class Outstock(Stock):
     __tablename__ = 'outstock'
     
@@ -116,7 +160,7 @@ class Group(Tracked):
     name = db.Column(db.String())
     description = db.Column(db.String())
     
-    items = db.relationship('Item', backref='group', lazy='dynamic')
+    items = db.relationship('Item', backref='item_group', lazy='dynamic')
 
     def __init__(self, user, name, description):
         self.name = name
@@ -133,7 +177,7 @@ class Brand(Tracked):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String())
     
-    items = db.relationship('Item', backref='brand', lazy='dynamic')
+    items = db.relationship('Item', backref='item_brand', lazy='dynamic')
 
     def __init__(self, user, name):
         self.name = name
@@ -157,12 +201,15 @@ class Item(Tracked):
     
     unit = db.Column(db.String(), nullable=True)
     weight = db.Column(db.Float(2, True), nullable=True)
-    instock = db.Column(db.Integer, default=0)
-    outstock = db.Column(db.Integer, default=0)
+    instock_number = db.Column(db.Integer, default=0)
+    outstock_number = db.Column(db.Integer, default=0)
     
     max_price = db.Column(db.Float(2, True), nullable=True)
     sum_price = db.Column(db.Float(2, True), default=0)
     min_price = db.Column(db.Float(2, True), nullable=True)
+    
+    instocks = db.relationship("Instock", backref="instock_items", lazy="dynamic")
+    outstocks = db.relationship("Outstock", backref="outstock_items", lazy="dynamic")
     
     def get_average_price(self):
         return round(self.sum_price / self.instock, 2)
