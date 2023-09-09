@@ -1,10 +1,13 @@
 *.pyc
 
-migrations
 __pycache__/
 .vscode
 node_modules/
 ted_site/.env
+**/.venv*
+
+www/
+*.csv
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*

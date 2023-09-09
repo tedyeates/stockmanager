@@ -1,5 +1,15 @@
 # stockmanager
 PC Elemac Stock Management System
+
+## Migrating
+```
+flask db migrate -m "Initial migration."
+flask db upgrade
+```
+
+
+
+# Deprecated
 ## Quick Start
 After downloading you will need to create a `.env` file in the same folder as `manage.py` before deploying with the following attributes:
 ```
@@ -10,7 +20,6 @@ SUPER_USER_PASSWORD=<Password for Super User Access to Django Website>
 ```
 
 Omit the two AWS related addresses on initial deploy, as you can obtain these from AWS after deploying. Afterwards update `.env` and redeploy
-
 ### Create Django Secret Key
 ```
 import secrets

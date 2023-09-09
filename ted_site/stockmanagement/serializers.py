@@ -179,6 +179,7 @@ class InstockSerializer(StockSerializer):
     price = serializers.DecimalField(max_digits=50, decimal_places=2)
     supplier = serializers.CharField(max_length=50)
     purchase_order_id = serializers.CharField(max_length=50)
+    
 
     class Meta(StockSerializer.Meta):
         model = Instock
@@ -195,7 +196,6 @@ class OutstockSerializer(StockSerializer):
     stock_id = serializers.CharField(max_length=50)
     requester = serializers.CharField(max_length=50)
     department = serializers.CharField(max_length=50)
-    instock = serializers.PrimaryKeyRelatedField(queryset=Instock.objects.all())
 
     class Meta(StockSerializer.Meta):
         model = Outstock

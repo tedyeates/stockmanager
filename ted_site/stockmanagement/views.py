@@ -2,9 +2,12 @@ from decimal import Decimal
 import math
 from django.http import JsonResponse
 from django.views import View
-from django.db.models import Q
+from rest_framework.views import APIView
+from django.db.models import Q, Max, Min
+from django.utils.translation import gettext as _
+from rest_framework. serializers import ValidationError
 
-from auditlog.models import LogEntry
+# from auditlog.models import LogEntry
 
 from stockmanagement.models import Outstock, Item, Group, Instock, Brand, SearchSuggestion
 from stockmanagement.models import SearchSuggestion
@@ -12,6 +15,8 @@ from stockmanagement.models import SEARCH_RESULTS
 from .serializers import *
 from stockmanagement.util.custom_viewsets import FieldViewMixin, FormDataMixin
 
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 
 class LogViewSet(FormDataMixin):
     model = LogEntry
@@ -58,29 +63,96 @@ class InstockViewSet(FormDataMixin):
     model = Instock
     related_keys = ["item"]
     can_cut = False
-
-    def create(self, request):
-        print(request.data)
-        create_result = super().create(request)
-
-        item_id = request.data["item"]
-        connected_item_price = Decimal(math.ceil(Decimal(request.data["price"]) * Decimal(request.data["quantity"]) * 100) / 100)
-        connected_item = Item.objects.get(id=item_id)
-
-        connected_item.instock_number += 1
+    
+    def update_price(self, connected_item, connected_item_price, price):
         if(connected_item.sum_price is None):
             connected_item.sum_price = Decimal(0)
+            
+        
+        connected_item.instock_number += 1
         connected_item.sum_price += connected_item_price
 
-        if connected_item.max_price is None or connected_item_price > connected_item.max_price:
-            connected_item.max_price = connected_item_price
-        if connected_item.min_price is None or connected_item_price < connected_item.min_price:
-            connected_item.min_price = connected_item_price
+        if connected_item.max_price is None or price > connected_item.max_price:
+            connected_item.max_price = price
+        if connected_item.min_price is None or price < connected_item.min_price:
+            connected_item.min_price = price
 
-        connected_item.save(update_fields=[
-            "instock_number", "sum_price", "max_price", "min_price"
-        ])
-        return create_result
+        
+    def update_instock_item(self, request, connected_item):
+        price = round(Decimal(request.data["price"]), 2)
+        connected_item_price = round(price * round(Decimal(request.data["quantity"]), 2), 2)
+        self.update_price(connected_item, connected_item_price, price)
+
+
+    def update_item_quantity(self, request, connected_item):
+        connected_item.quantity += Decimal(request.data["quantity"])
+
+
+    def get_connected_item(self, request):
+        item_id = request.data["item"]
+        connected_item = Item.objects.get(id=item_id)
+        
+        return connected_item
+
+
+    def create(self, request):
+        created_instock = super().create(request)
+        connected_item = self.get_connected_item(request)
+        
+        self.update_instock_item(request, connected_item)
+        self.update_item_quantity(request, connected_item)
+
+        connected_item.save()
+        
+        return created_instock
+    
+    
+    def reset_sum(self, instock):
+        item_price = Decimal(round(instock.price * instock.quantity, 2))
+        
+        instock_item = instock.item
+        instock_item.instock_number -= 1
+        instock_item.sum_price -= item_price
+        return instock_item
+        
+        
+    def reset_price(self, instock):
+        instock_item = instock.item
+        
+        new_max_price = Instock.objects.filter(item=instock_item).aggregate(Max("price"))["price__max"]
+        instock_item.max_price = new_max_price
+
+        new_min_price = Instock.objects.filter(item=instock_item).aggregate(Min("price"))["price__min"]
+        instock_item.min_price = new_min_price
+
+        instock_item.save()
+        return instock_item
+        
+    
+    def update(self, request, pk=None):
+        instock = Instock.objects.get(pk=pk)
+        are_items_equal = instock.item.id == request.data["item"]["id"]
+        
+        updated_instock = super().update(request, pk)
+        
+        old_item = self.reset_sum(instock)
+        old_item.quantity -= instock.quantity
+        old_item.save()
+            
+        connected_item = self.get_connected_item(request)
+        
+            
+        updated_item = self.reset_price(instock)
+        if are_items_equal: 
+            connected_item = updated_item
+            
+        self.update_item_quantity(request, connected_item)
+        self.update_instock_item(request, connected_item)
+        connected_item.save()
+        
+        return updated_instock
+        
+        
     
 
 class OutstockViewSet(FormDataMixin):
@@ -91,6 +163,47 @@ class OutstockViewSet(FormDataMixin):
     model = Outstock
     related_keys = ["item"]
     can_cut = False
+    
+    def update_quantity_left(self, request, item):
+        if item.quantity < request.data["quantity"] or request.data["quantity"] <= 0:
+            print(_("Not enough items instock. Only %(quanitity)s items remain") % {'quanitity': item.quantity})
+            raise ValidationError({"quantity":[_("Not enough items instock. Only %(quanitity)s items remain") % {'quanitity': item.quantity}]})
+        
+        item.outstock_number += 1
+        item.quantity -= round(Decimal(request.data["quantity"]), 2)
+        print("NEW ITEM")
+        print(item.name)
+        print(item.outstock_number)
+        item.save()
+    
+    def create(self, request):
+        created_outstock = super().create(request)
+        item = Item.objects.get(id=request.data["item"])
+        item.outstock_number += 1
+        
+        request.data["quantity"] = round(Decimal(request.data["quantity"]), 2)
+        self.update_quantity_left(request, item)
+        
+        return created_outstock
+
+
+    def update(self, request, pk=None):
+        outstock = Outstock.objects.get(pk=pk)
+        
+        request.data["quantity"] = round(Decimal(request.data["quantity"]), 2)
+        
+        updated_outstock = super().update(request, pk)
+        
+        old_item = outstock.item
+        old_item.quantity += outstock.quantity
+        old_item.outstock_number -= 1
+        old_item.save()
+        
+        item = Item.objects.get(id=request.data["item"])
+        self.update_quantity_left(request, item)
+        
+        return updated_outstock
+        
 
 
 class InstockFieldView(FieldViewMixin):
@@ -116,9 +229,7 @@ class SelectFieldSearch(View):
             search_results = RelatedItemSerializer(search_data, many=True)
 
         if model == "group":
-            print(search_term)
             search_data = Group.objects.filter(name__icontains=search_term)[:SEARCH_RESULTS]
-            print(search_data)
             search_results = RelatedGroupSerializer(search_data, many=True)
         
         if model == "brand": 
@@ -175,7 +286,7 @@ class Search(View):
     def related_suggestions(self, model_name):
         if model_name == "instock" or model_name == "outstock":
             self.serialize_suggestions("item")
-        if model_name == "items": 
+        if model_name == "item": 
             self.serialize_suggestions("brand")
             self.serialize_suggestions("group")
             
@@ -195,3 +306,66 @@ class Search(View):
         
         self.suggestions.sort(key=lambda suggestion:suggestion["display_name"])
         return JsonResponse({'results': self.suggestions}, status=200)
+    
+    
+# CYPRESS TESTING
+# @method_decorator(login_required, name='dispatch')
+class Cypress(APIView):
+    
+    def delete(self, request):
+        SearchSuggestion.objects.all().delete()
+        Group.objects.all().delete()
+        Item.objects.all().delete()
+        Instock.objects.all().delete()
+        Outstock.objects.all().delete()
+
+        return JsonResponse({}, status=204)
+        
+        
+    def post(self, request):
+        test = Group.objects.create(name="test")
+        item = Item.objects.create(name="test item", description="test item description", group=test)
+        Item.objects.create(name="test item2", description="test item description")
+        
+        Instock.objects.create_instock(
+            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
+            invoice_id="Test Stock", quantity=10, price=10, item=item,
+            supplier="test"
+        )
+        
+        return JsonResponse({}, status=201)
+    
+    
+
+class CypressInstock(APIView):
+    def post(self, request):
+        item = Item.objects.create(code="GLN60150X230")
+        item2 = Item.objects.create(code="Test")
+        Instock.objects.create_instock(
+            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
+            invoice_id="Test Stock", quantity=10, price=10, item=item2,
+            supplier="test"
+        )
+        Instock.objects.create_instock(
+            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
+            invoice_id="ยกยอด64", quantity=10, price=300, item=item,
+            supplier="test"
+        )
+        Instock.objects.create_instock(
+            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
+            invoice_id="ยกยอด65", quantity=10, price=10, item=item, 
+            supplier="test"
+        )
+       
+        Outstock.objects.create_outstock(
+            stock_id="650852", stock_date="2010-11-10", requester="ted", 
+            quantity=2, item=item, job_id="123", customer="phil",
+            department="ted house"
+        )
+        Outstock.objects.create_outstock(
+            stock_id="650672", stock_date="2010-11-10", requester="ted", 
+            quantity=8, item=item, job_id="123", customer="phil",
+            department="ted house"
+        )
+        
+        return JsonResponse({}, status=201)
