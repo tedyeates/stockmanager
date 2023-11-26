@@ -3,7 +3,7 @@
 __pycache__/
 .vscode
 node_modules/
-ted_site/.env
+stockmanagement-bg/.env
 **/.venv*
 
 www/

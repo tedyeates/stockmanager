@@ -6,6 +6,7 @@ import { ProviderProps } from "util/types/types"
 import { usePagination } from "pages/customhooks/PageNumberDisplayHook"
 import { usePageNumberUpdater } from "pages/customhooks/PageUpdateHook"
 import { useAuth } from "./Login"
+import { Requests } from "util/requests"
 
 
 type PageTypeChangerContextType = {
@@ -62,31 +63,37 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
     const [pageData, setPageDataTo] = useState<DataTypeArray>([])
     
 
-    const updateDataFor = useCallback((newPageName: PageName, newPageNumber:number, filters: Array<FilterOptionType>, active:boolean) => {
-        let url = `${process.env.REACT_APP_BASE_URL}/api/${newPageName}/?page=${newPageNumber}`
+    const updateDataFor = useCallback(async (newPageName: PageName, newPageNumber:number, filters: Array<FilterOptionType>, active:boolean) => {
+        let url = `${process.env.REACT_APP_BASE_URL}/${newPageName}/?page=${newPageNumber}`
+        // TODO: include filters
         filters.forEach(({name, value}) => {
             url = `${url}&${name}=${encodeURIComponent(value)}`
         })
-        axios
-            .get(url, {headers: authHeader.current}).then(res => {
-                setIsPageLoadingTo(false)
-                if(!active) return
 
-                setPageDataTo(res.data.results)
-                pageDisplayUpdater.updatePageNumbersToDisplay(res.data.count, newPageNumber)
-                pageDisplayUpdater.updateHasPreviousPageTo(res.data.previous)
-                pageDisplayUpdater.updateHasNextPageTo(res.data.next)         
-            }).catch(error => {
-                if(error.response.status === 401){
-                    setIsPageLoadingTo(false)
-                    setPageDataTo([])
-                    clearToken()
-                }
-            })
+        try {
+            const response = await Requests.get(url, authHeader.current)
+            setIsPageLoadingTo(false)
+            if(!active) return
+
+            setPageDataTo(response.results)
+            pageDisplayUpdater.updatePageNumbersToDisplay(
+                response.count, 
+                newPageNumber
+            )
+            pageDisplayUpdater.updateHasPreviousPageTo(response.previous)
+            pageDisplayUpdater.updateHasNextPageTo(response.next)
+
+        } catch (error) {
+            setIsPageLoadingTo(false)
+            setPageDataTo([])
+            clearToken()
+        }
     }, [authHeader])
 
 
-    const requestModelInputsFor = useCallback((newPageName: PageName, active:boolean) => {
+    const requestModelInputsFor = useCallback(async (newPageName: PageName, active:boolean) => {
+
+        // TODO: fix fields
         axios
             .get(`${process.env.REACT_APP_BASE_URL}/fields/${newPageName}`, {
                 headers: authHeader.current

@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { ErrorState, hasError, Error } from '../popup/Errors';
+import { Requests } from 'util/requests';
 
 function Copyright(props: any) {
   return (
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if(newToken && newToken !== token.current){
             token.current = newToken
             authHeader.current = {
-                'Authorization': `Token ${newToken}`
+                'Authorization': `Bearer ${newToken}`
             }
         }
     }
@@ -72,6 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     function signin(newUser: string, newToken: string, callback: VoidFunction){
         sessionStorage.setItem("token", newToken)
+        console.log(newToken)
+        console.log(newUser)
         setUser(newUser)
         generateAuthHeader(newToken)
 
@@ -123,22 +126,26 @@ export function Login() {
     let state = location.state as LocationState
     let path = state?.from?.pathname || "/";
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
+        const data = JSON.stringify(Object.fromEntries(new FormData(event.currentTarget)))
 
-        axios
-            .post(`${process.env.REACT_APP_BASE_URL}/login/`, data)
-            .then((res) => {
-                auth.signin(res.data.username, res.data.token, () => {
-                    navigate(path, { replace: true })
-                })
+        console.log(data)
+
+        try {
+            const response = await Requests.post(
+                `${process.env.REACT_APP_BASE_URL}/login`, 
+                data
+            )
+            console.log(response)
+            auth.signin(response.username, response.token, () => {
+                navigate(path, { replace: true })
             })
-            .catch((error) => {
-                if(error.response){
-                    setErrors(error.response.data)
-                }
-            })
+        } catch {
+            // TODO: Handle error
+            return
+        }
+
     }
 
     return (
