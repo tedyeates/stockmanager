@@ -167,7 +167,8 @@ class StockSerializer(serializers.ModelSerializer):
     stock_date = serializers.DateField(format='%d/%m/%Y')
     size = serializers.ListField(child=serializers.DecimalField(max_digits=50, decimal_places=2), required=False)
     item = RelatedItemSerializer()
-    job_id = serializers.CharField(max_length=50)
+    customer = serializers.CharField(source="job.customer.name", read_only=True, default="")
+    job = serializers.CharField(source="job.job_id", read_only=True, default="")
 
     class Meta:
         model = Stock
@@ -192,14 +193,13 @@ class InstockExportSerializer(InstockSerializer):
     item = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
 class OutstockSerializer(StockSerializer):
-    customer = serializers.CharField(max_length=50)
     stock_id = serializers.CharField(max_length=50)
     requester = serializers.CharField(max_length=50)
     department = serializers.CharField(max_length=50)
 
     class Meta(StockSerializer.Meta):
         model = Outstock
-
+        exclude = ("job",)
 
 class OutstockUpdateSerializer(OutstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
