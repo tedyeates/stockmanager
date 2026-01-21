@@ -199,7 +199,7 @@ class FieldViewMixin(views.APIView):
                     "fieldName": field.name, "fieldType": field_type, 
                     "fieldChoices": field_choices
                 })
-
+        print(field_data)
         return Response(field_data)
     
     

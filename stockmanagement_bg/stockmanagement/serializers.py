@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from auditlog.models import LogEntry
 from django.db.models import Manager
 
-from .models import Brand, Group, Item, Outstock, Stock, Instock, SearchSuggestion
+from .models import Brand, Group, Item, Job, Outstock, Stock, Instock, SearchSuggestion
 
 
 class SearchSuggestionListSerializer(serializers.ListSerializer):
@@ -160,7 +160,13 @@ class RelatedItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item 
         fields = ('id', 'name')
-
+        
+        
+class RelatedJobSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="job_id", read_only=True)
+    class Meta:
+            model = Job 
+            fields = ('id', 'job_id', 'name')
     
 
 class StockSerializer(serializers.ModelSerializer):
@@ -168,7 +174,7 @@ class StockSerializer(serializers.ModelSerializer):
     size = serializers.ListField(child=serializers.DecimalField(max_digits=50, decimal_places=2), required=False)
     item = RelatedItemSerializer()
     customer = serializers.CharField(source="job.customer.name", read_only=True, default="")
-    job = serializers.CharField(source="job.job_id", read_only=True, default="")
+    job = RelatedJobSerializer()
 
     class Meta:
         model = Stock
@@ -199,7 +205,6 @@ class OutstockSerializer(StockSerializer):
 
     class Meta(StockSerializer.Meta):
         model = Outstock
-        exclude = ("job",)
 
 class OutstockUpdateSerializer(OutstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
@@ -207,3 +212,4 @@ class OutstockUpdateSerializer(OutstockSerializer):
     
 class OutstockExportSerializer(OutstockSerializer):
     item = serializers.SlugRelatedField(read_only=True, slug_field='name')
+

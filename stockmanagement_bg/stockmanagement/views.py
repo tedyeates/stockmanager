@@ -9,7 +9,7 @@ from rest_framework. serializers import ValidationError
 
 # from auditlog.models import LogEntry
 
-from stockmanagement.models import Outstock, Item, Group, Instock, Brand, SearchSuggestion
+from stockmanagement.models import Job, Outstock, Item, Group, Instock, Brand, SearchSuggestion
 from stockmanagement.models import SearchSuggestion
 from stockmanagement.models import SEARCH_RESULTS
 from .serializers import *
@@ -235,6 +235,11 @@ class SelectFieldSearch(View):
         if model == "brand": 
             search_data = Brand.objects.filter(name__icontains=search_term)[:SEARCH_RESULTS]
             search_results = RelatedBrandSerializer(search_data, many=True)
+            
+        if model == "job":
+            search_data = Job.objects.filter(job_id__icontains=search_term)[:SEARCH_RESULTS]
+            search_results = RelatedJobSerializer(search_data, many=True)
+            
 
         return JsonResponse({'results': search_results.data}, status=200)
     
