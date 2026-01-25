@@ -10,6 +10,7 @@ import { useRowData } from '../context/PopupContextManager';
 
 import "styles/forms.css"
 import { DataType, FieldsDataType } from '../../util/types/PageTypes';
+import { FormControl, MenuItem, Select } from '@mui/material';
 
 
 export type FormProps = {
@@ -73,13 +74,43 @@ export function Form(props: FormProps) {
         return (
             <ModelAutocomplete 
                 modelType={fieldName}
-                value={rowData[fieldName] ?? {}}
+                value={rowData[fieldName] ?? null}
                 onChange={props.onChange}
             />
         )
 
     }
 
+
+    function generateSelectField(fieldName: string, choices: string[]): ReactElement {
+        return (
+            <FormControl sx={{ minWidth: "100%" }} size="small">
+                <Select 
+                    className='form-dropdown' 
+                    id={fieldName}
+                    onChange={(event) => props.onChange(fieldName, 'object', event.target.value)}
+                    value={rowData[fieldName] ?? ''}
+                >
+                    {
+                        choices.map((choice, index) => {
+                            return <MenuItem key={index} value={choice}>{title(choice)}</MenuItem>
+                        })
+                    }
+                </Select>
+            </FormControl>
+        )
+    }
+
+    type FieldType =
+        | 'DecimalField'
+        | 'IntegerField'
+        | 'ForeignKey'
+        | 'DateField'
+        | 'ChoiceField'
+        | 'default'
+        | 'AutoField';
+
+    type FieldFactory = () => React.ReactElement;
 
     /**
      * Generates a field input based on fieldType
@@ -88,19 +119,19 @@ export function Form(props: FormProps) {
      * @param {String} choices List of choices for the field if ChoiceField
      * @returns HTML input field
      */
-    function checkFieldType(fieldName: string, fieldType: string, choices: string[]): ReactElement {
-        switch(fieldType){
-            case 'DecimalField':
-                return generateInputField('number', fieldName, {step: '.01'})
-            case 'IntegerField':
-                return generateInputField('number', fieldName)
-            case 'ForeignKey':
-                return generateModelSelectField(fieldName)
-            case 'DateField':
-                return generateDateField(fieldName)
-            default:
-                return generateInputField('text', fieldName)
+    function checkFieldType(fieldName: string, fieldType: FieldType, choices: string[]): ReactElement {
+
+        const fieldMap: Record<FieldType, FieldFactory> = {
+            'DecimalField': () => generateInputField('number', fieldName, {step: '.01'}),
+            'IntegerField': () => generateInputField('number', fieldName),
+            'ForeignKey': () => generateModelSelectField(fieldName),
+            'DateField': () => generateDateField(fieldName),
+            'ChoiceField': () => generateSelectField(fieldName, choices),
+            'AutoField': () => <></>,
+            'default': () => generateInputField('text', fieldName)
         }
+
+        return (fieldMap[fieldType] ?? fieldMap['default'])()
     }
 
     
@@ -111,7 +142,7 @@ export function Form(props: FormProps) {
      * @param {String} choices List of choices for the field if ChoiceField
      * @returns HTML elements field label and field
      */
-    function generateField(fieldName: string, fieldType: string, choices: string[]): ReactElement {
+    function generateField(fieldName: string, fieldType: FieldType, choices: string[]): ReactElement {
         return (
             <>
                 <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" htmlFor="grid-first-name">
@@ -174,7 +205,7 @@ export function Form(props: FormProps) {
                         let {fieldName, fieldType, fieldChoices} = field
                         return (
                             <div key={index} className={`input-container w-full md:w-1/${size} px-3 mb-6 md:mb-0`}>
-                                {generateField(fieldName, fieldType, fieldChoices)}
+                                {generateField(fieldName, fieldType as FieldType, fieldChoices)}
                             </div>
                         )
                     }
@@ -196,4 +227,3 @@ export function Form(props: FormProps) {
         </div>
     )
 }
-

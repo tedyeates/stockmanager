@@ -16,7 +16,7 @@ type AutocompleteValue = DataType & {
 
 type AutocompleteProps = {
     modelType: string
-    value: AutocompleteValue
+    value: AutocompleteValue | null
     onChange: (fieldName:string, fieldType:string, newValue:AutocompleteValue | null) => void
 }
 
@@ -24,7 +24,7 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
     const auth = useAuth()
 
     const [inputValue, setInputValue] = useState('')
-    const [options, setOptions] = useState<AutocompleteValue[]>([value])
+    const [options, setOptions] = useState<AutocompleteValue[]>(value ? [value] : [])
 
     const suggestions = useMemo(() => {
         return throttle(
@@ -38,12 +38,12 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
                     let foundOption = false
 
                     response.data.results.forEach((option:AutocompleteValue) => {
-                        if(value.id === option.id) foundOption = true
+                        if(value && value.id === option.id) foundOption = true
                         
                         newOptions.push(option)
                     })
 
-                    if(!foundOption) newOptions.push(value)
+                    if(!foundOption && value) newOptions.push(value)
 
                     setOptions(newOptions)
                 })

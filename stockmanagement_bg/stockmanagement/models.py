@@ -6,6 +6,7 @@ from django.db.models.functions import Length
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
+from django.utils import timezone
 
 from auditlog.registry import auditlog
 
@@ -13,7 +14,10 @@ from django.db.models.signals import post_save, post_delete
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
-
+# TODO: Make UI like excel sheets and fix import to make sure it still works
+# TODO: Remake search to work with full text
+# TODO: Focus on getting data in and calculations/search later
+# TODO: Customer/job dashboard of total price, and list of relevant outstock and instock
 SEARCH_RESULTS = 20
 class SearchSuggestionManager(models.Manager):
     number_results = SEARCH_RESULTS
@@ -176,24 +180,28 @@ class Brand(Searchable):
 
 
 class Item(Searchable):
-    search_fields = ["name", "code", "weight", "max_price", "min_price", "sum_price"]
+    search_fields = ["name", "code", "max_price", "min_price", "sum_price"]
     number_fields = {"weight", "max_price", "min_price", "sum_price"}
 
     modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, null=True)
-    code = models.CharField(_("Item Code"), max_length=50)  # Glass 20x20 is GL2020
+    code = models.CharField(_("Item SKU"), max_length=50, unique=True)  # Glass 20x20 is GL2020
     name = models.CharField(_("Item Name"), max_length=50, null=True)
-    description = models.CharField(_("Item Description"), max_length=200)
+    description = models.CharField(_("Item Description"), max_length=1000)
     brand = models.ForeignKey(Brand, verbose_name=_("Brand"), null=True, on_delete=models.SET_NULL)
     unit = models.CharField(_("Item Unit"), max_length=50, null=True)
-    weight = models.DecimalField(_("Weight KG"), max_digits=50, decimal_places=2, null=True)
     instock_number = models.IntegerField(_("Instock Number"), default=0)
     outstock_number = models.IntegerField(_("Outstock Number"), default=0)
-    max_price = models.DecimalField(_("Max Price"), max_digits=50, decimal_places=2, null=True)
-    sum_price = models.DecimalField(_("Sum Price"), max_digits=50, decimal_places=2, default=0)
+    max_price = models.DecimalField(_("Max Price"), max_digits=50, decimal_places=2, null=True) # Get max from instock unit price
+    sum_price = models.DecimalField(_("Sum Price"), max_digits=50, decimal_places=2, default=0) # Divide by instock number for average instock
     min_price = models.DecimalField(_("Min Price"), max_digits=50, decimal_places=2, null=True)
     quantity = models.DecimalField(_("Quantity of Items Left Instock"), default=0, max_digits=50, decimal_places=2)
     group = models.ForeignKey(Group, verbose_name=_("Group"), null=True, on_delete=models.SET_NULL)
-
+    notes = models.CharField(_("Notes"), max_length=1000, null=True)
+    
+    min_quanity = models.DecimalField(_("Minimum Quantity"), null=True, max_digits=50, decimal_places=2) # Alert when quantity below
+    max_quanity = models.DecimalField(_("Maximum Quantity"), null=True, max_digits=50, decimal_places=2) # Alert when quantity greater
+    
+        
     class Meta:
         verbose_name = _("Item")
         verbose_name_plural = _("Items")
@@ -212,21 +220,30 @@ class Item(Searchable):
         
         
         super().save(*args, **kwargs)
+        
 
+class StoreType(models.TextChoices):
+    METAL = "metal", "Metal"
+    ACCESSORY = "accessory", "Accessory"
+    MACHINE = "machine", "Machine"
+    SERVICE = "service", "Service"
+    
+        
 class Stock(Searchable):
-    stock_date = models.DateField(_("Date"), null=True)
+    stock_date = models.DateField(_("Date"), default=timezone.now)
     created_date = models.DateTimeField(_("Date Created"), auto_now=False, auto_now_add=True, null=True)
     modified = models.DateTimeField(_("Date Modified"), auto_now=True, auto_now_add=False, null=True)
-    job_id = models.CharField(_("Job ID"), max_length=50, null=True)  # YYXXXX, STOCK = 0000000, No Job -0000001
+
     item = models.ForeignKey(Item, verbose_name=_("Item Stocked"), null=True, on_delete=models.SET_NULL)
     quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2, validators=[MinValueValidator(0)])
-
+    notes = models.CharField(_("Notes"), max_length=1000, null=True)
+    store_type = models.CharField(_("Store Type"), max_length=20, choices=StoreType.choices, default=StoreType.METAL)
+    
+    
     class Meta:
-        abstract=True
-
-    def __str__(self):
-        return str(self.item.name) + " " + str(self.quantity)
-
+        abstract = True
+        
+    
 
 
 class StockManager(models.Manager):
@@ -334,7 +351,8 @@ class Instock(Stock):
     search_fields = ["job_id", "invoice_id", "purchase_order_id", "supplier", "quantity", "price"]
     number_fields = {"quantity", "price"}
 
-    invoice_id = models.CharField(_("Invoice ID"), max_length=50, null=True)
+    invoice_id = models.CharField(_("Invoice ID"), max_length=50, null=False, default="UNDEFINED")
+    job = models.ForeignKey("stockmanagement.Job", verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
     price = models.DecimalField(_("Price"), max_digits=50, decimal_places=2, null=True, validators=[MinValueValidator(0)])
     purchase_order_id = models.CharField(_("PO ID"), max_length=50, null=True)
     supplier = models.CharField(_("Supplier"), max_length=50, null=True)
@@ -396,17 +414,45 @@ class OutstockManager(StockManager):
         
         outstock.save()
         
+        
+class Customer(Searchable):
+    search_fields = ["name"]
+    
+    name = models.CharField(_("Customer Name"), max_length=50)
+    
+    class Meta:
+        verbose_name = _("Customer")
+        verbose_name_plural = _("Customers")
+
+    def __str__(self):
+        return str(self.name)
+    
+class Job(Searchable):
+    search_fields = ["job_id"]
+    
+    job_id = models.CharField(_("Job ID"), max_length=50)
+    customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
+    
+    class Meta:
+        verbose_name = _("Job")
+        verbose_name_plural = _("Jobs")
+
+    def __str__(self):
+        return str(self.job_id)
 
 class Outstock(Stock):
-    search_fields = ["job_id", "stock_id", "requester", "department", "customer", "quantity"]
+    search_fields = ["stock_id", "requester", "department", "quantity"]
     number_fields = {"quantity"}
     
-    customer = models.CharField(_("Customer"), max_length=200, null=True)
     stock_id = models.CharField(_("Stock ID"), max_length=200, null=True)
     requester = models.CharField(_("Requester"), max_length=200)
     department = models.CharField(_("Department"), max_length=200, null=True)
+    remaining_quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2, validators=[MinValueValidator(0)], null=True)
     objects = OutstockManager()
     
+    job = models.ForeignKey("stockmanagement.Job", verbose_name=_("Job"), on_delete=models.CASCADE, null=True, blank=False)
+    
+
     class Meta:
         verbose_name = _("Outstock")
         verbose_name_plural = _("Outstocks")

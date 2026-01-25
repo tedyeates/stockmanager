@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if(newToken && newToken !== token.current){
             token.current = newToken
             authHeader.current = {
-                'Authorization': `Bearer ${newToken}`
+                'Authorization': `Token ${newToken}`
             }
         }
     }
@@ -134,7 +134,7 @@ export function Login() {
 
         try {
             const response = await Requests.post(
-                `${process.env.REACT_APP_BASE_URL}/login`, 
+                `${process.env.REACT_APP_BASE_URL}/login/`, 
                 data
             )
             console.log(response)

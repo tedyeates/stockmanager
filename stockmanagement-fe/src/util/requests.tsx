@@ -12,8 +12,9 @@ export class Requests {
         headers: HeadersInit | null=null,
         data: BodyInit | null=null
     ) => {
+        console.log(method)
         const response =  await fetch(
-            `${process.env.REACT_APP_BASE_URL}/login`,
+            url,
             {
                 method: method,
                 headers: {
@@ -23,6 +24,7 @@ export class Requests {
                 body: data
             }
         )
+        console.log(response.ok)
         if (!response.ok) throw new Error(`Request Error ${response.status}: ${response.body}`)
         return await response.json()
     }

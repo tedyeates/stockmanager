@@ -1,32 +1,63 @@
 from collections import defaultdict
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from enum import Enum
 from openpyxl import load_workbook
 from os.path import dirname
-from stockmanagement.models import Group, Item, Instock, Brand, Outstock
+from stockmanagement.models import Customer, Group, Item, Instock, Brand, Job, Outstock, StoreType
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
+from pathlib import Path
 
-from ted_site.settings import BASE_DIR
+from stockmanagement_bg.settings import BASE_DIR
 
 import csv
 
 
-DATA_LOC = dirname(dirname(__file__)) + "/static/stockmanagement/data/"
+BASE_PATH = Path(__file__).resolve().parent.parent
+DATA_LOC = BASE_PATH / "static" / "stockmanagement" / "data"
+
+class AccessoryItemColumns(Enum):
+    ITEM_CODE_COL = 0
+    ITEM_GROUP_COL = 1
+    ITEM_MAX_COL = 2
+    ITEM_MIN_COL = 3
+    ITEM_DESC_COL = 4
+    ITEM_BRAND_COL = 5
+    ITEM_UNIT_COL = 6
+    ITEM_WEIGHT_COL = 11
+    
 
 
 def load_stock_data():
-    load_excel("stock_data.xlsx", is_instock=True,
-                itemsheet="Tableitem", instocksheet="Instock", outstocksheet="OUTSTOCK21")
+    load_excel(
+        "stock1_ACC_2025.xlsx", 
+        itemsheet="TABLEITEM", 
+        instocksheet="INSTOCK", 
+        outstocksheet="OUTSTOCK",
+        item_columns=AccessoryItemColumns,
+        store_type=StoreType.ACCESSORY
+    )
+    load_excel(
+        "Store2_metal_2025.xlsx", 
+        itemsheet="Tableitem", 
+        instocksheet="Instock", 
+        outstocksheet="PC",
+        store_type=StoreType.METAL
+    )
+
 
 
 def load_excel(file_name, **kwargs):
-    workbook = load_workbook(DATA_LOC + file_name)
+    file_path = DATA_LOC / file_name
+    print("Looking for file at:", file_path)
+    print("Exists:", file_path.exists())
+    workbook = load_workbook(file_path, data_only=True)
     item_sheet = workbook[kwargs.pop("itemsheet")]
     instock_sheet = workbook[kwargs.pop("instocksheet")]
     outstock_sheet = workbook[kwargs.pop("outstocksheet")]
-    open_log_file("invalid_item", Item, load_items, item_sheet)
-    open_log_file("invalid_instock", Instock, load_instock, instock_sheet)
-    open_log_file("invalid_outstock", Outstock, load_outstock, outstock_sheet)
+    open_log_file("invalid_item", Item, load_items, item_sheet, kwargs)
+    open_log_file("invalid_instock", Instock, load_instock, instock_sheet, kwargs)
+    open_log_file("invalid_outstock", Outstock, load_outstock, outstock_sheet, kwargs)
     
     
 def open_log_file(file_name, model,  function, *args, **kwargs):
@@ -95,6 +126,7 @@ def get_cell_value(row, column, is_date=False, is_upper=False):
     if cell is None: return None
     
     if isinstance(cell, datetime): return cell
+    if isinstance(cell, int): cell = str(cell)
     if is_date: return datetime.strptime(cell, '%d/%m/%y')
     if is_upper: return cell.upper()
     
@@ -104,35 +136,59 @@ def get_cell_value(row, column, is_date=False, is_upper=False):
     if not isinstance(cell, str) or cell.isdecimal(): 
         return Decimal(round(cell,2))
     
-    if isinstance(cell, str) and cell[0] == "=":
-        return calculate_excel_function(cell)
+    if isinstance(cell, str) and cell.startswith("="):
+        print(f"[WARN] Formula cell ignored: {cell}")
+        return None
     
     return cell.strip()
+
+def safe_decimal(value):
+    if value is None:
+        return None
+    try:
+        return Decimal(value)
+    except (InvalidOperation, TypeError, ValueError):
+        return None  
     
-    
-def load_items(writer, item_sheet):
+def load_items(writer, item_sheet, kwargs):
     ITEM_CODE_COL = 1
     ITEM_GROUP_COL = 2
     ITEM_DESC_COL = 3
     ITEM_BRAND_COL = 4
     ITEM_UNIT_COL = 5
-    ITEM_WEIGHT_COL = 10
+    
+    item_columns = kwargs.pop("item_columns")
 
     for row in item_sheet.iter_rows(min_row=3):
-        item_code = get_cell_value(row, ITEM_CODE_COL, is_upper=True)
+        
+        if item_columns:
+            item_code = get_cell_value(row, item_columns.ITEM_CODE_COL.value, is_upper=True)
 
-        item_desc = get_cell_value(row, ITEM_DESC_COL)
-        item_brand = get_cell_value(row, ITEM_BRAND_COL)
-        item_unit = get_cell_value(row, ITEM_UNIT_COL)
-        item_group = get_cell_value(row, ITEM_GROUP_COL)
-        item_weight = get_cell_value(row, ITEM_WEIGHT_COL)
+            item_desc = get_cell_value(row, item_columns.ITEM_DESC_COL.value)
+            item_brand = get_cell_value(row, item_columns.ITEM_BRAND_COL.value)
+            item_unit = get_cell_value(row, item_columns.ITEM_UNIT_COL.value)
+            item_group = get_cell_value(row, item_columns.ITEM_GROUP_COL.value)
+            item_max = get_cell_value(row, item_columns.ITEM_MAX_COL.value)
+            item_min = get_cell_value(row, item_columns.ITEM_MIN_COL.value)
+        else:
+            item_code = get_cell_value(row, ITEM_CODE_COL, is_upper=True)
+            item_desc = get_cell_value(row, ITEM_DESC_COL)
+            item_brand = get_cell_value(row, ITEM_BRAND_COL)
+            item_unit = get_cell_value(row, ITEM_UNIT_COL)
+            item_group = get_cell_value(row, ITEM_GROUP_COL)
+            item_max = None
+            item_min = None
+        
 
+        item_min = safe_decimal(item_min)
+        item_max = safe_decimal(item_max)
         formatted_row = {
-            "code": item_code, "brand": item_brand, "unit": item_unit, 
-            "group": item_group, "weight": item_weight
+            "code": item_code, "description": item_desc, "brand": item_brand, "unit": item_unit, 
+            "group": item_group, "item_max": item_max, "item_min": item_min
         }
         
         if item_code == None:
+            print(f"\033[91m[CRIT] No Item Code {row[0].row} {formatted_row}\033[0m")
             writer.writerow(formatted_row)
             continue
         
@@ -147,15 +203,19 @@ def load_items(writer, item_sheet):
         if item_brand:
             item_brand = item_brand.strip()
             brand, _ = Brand.objects.get_or_create(name=item_brand)
-                
-        if isinstance(item_weight, str) and not item_weight.isdecimal():
-            item_weight = None
+
         
-        Item.objects.get_or_create(code=item_code, defaults={"description": item_desc,
-                                                            "brand": brand,
-                                                            "unit": item_unit,
-                                                            "group": group,
-                                                            "weight": item_weight})
+        print(f"[INFO] Creating item {formatted_row} row: {row[0].row}")
+        Item.objects.get_or_create(
+            code=item_code, 
+            defaults={
+                "description": item_desc,
+                "brand": brand,
+                "unit": item_unit,
+                "group": group,
+                "min_quanity": item_min,
+                "max_quanity": item_max
+        })
 
 def get_min_price(stock_price, item):
     if item.min_price == -1 or item.min_price is None:
@@ -172,7 +232,7 @@ def get_max_price(stock_price, item):
     return max(item.max_price, stock_price)
 
 
-def load_instock(writer, stock_sheet):
+def load_instock(writer, stock_sheet, kwargs):
     DATE_COL = 0
     IV_COL = 1
     PO_COL = 2
@@ -181,6 +241,8 @@ def load_instock(writer, stock_sheet):
     ITEM_COL = 5
     QUANTITY_COL = 6
     PRICE_COL = 7
+
+    store_type = kwargs.get("store_type")
 
     count = 0
     for row in stock_sheet.iter_rows(min_row=3):
@@ -196,7 +258,7 @@ def load_instock(writer, stock_sheet):
             
         formatted_row = {
             "invoice_id": stock_iv, "item": stock_item, "quantity": stock_quantity,
-            "stock_date": stock_date, "purchase_order_id": stock_po, "job_id": stock_pc,
+            "stock_date": stock_date, "purchase_order_id": stock_po,
             "supplier": stock_supplier, "price": stock_price
         }
         should_skip = False
@@ -229,6 +291,15 @@ def load_instock(writer, stock_sheet):
             print(f"[CRIT] No Matching Item {stock_item}, Stock {stock_iv} not added to database {stock_price} {stock_pc} {stock_po}")
             writer.writerow(formatted_row)
             continue
+        
+        job = None
+        if stock_pc is not None:
+            try:
+                job, created_job = Job.objects.get_or_create(job_id=stock_pc)
+            except Exception:
+                print(f"[CRIT] Failed to get or create Job {stock_pc}")
+                writer.writerow(formatted_row)
+                continue
 
         if isinstance(stock_price, str):
             stock_price.replace(" ", "")
@@ -244,19 +315,21 @@ def load_instock(writer, stock_sheet):
         item.instock_number += Decimal(1)
         item.save()
             
+        print(f"[INFO] Creating Instock {formatted_row}, job id: {stock_pc} row: {row[0].row}")
         Instock.objects.get_or_create(
-            invoice_id=stock_iv, item=item, purchase_order_id=stock_po, 
-            job_id=stock_pc,
+            invoice_id=stock_iv, item=item, purchase_order_id=stock_po,
             defaults={
                 "stock_date": stock_date,
                 "supplier": stock_supplier,
                 "quantity": stock_quantity,
-                "price": stock_price
+                "price": stock_price,
+                "store_type": store_type,
+                "job": job
             }
         )
 
 
-def load_outstock(writer, outstock_sheet):
+def load_outstock(writer, outstock_sheet, kwargs):
     DATE_COL = 0
     PC_COL = 1
     CUSTOMER_COL = 2
@@ -266,6 +339,8 @@ def load_outstock(writer, outstock_sheet):
     ITEM_COL = 6
     QUANTITY_COL = 7
     
+    store_type = kwargs.get("store_type")
+
     count = 0
     for row in outstock_sheet.iter_rows(min_row=3):
         count+=1
@@ -280,9 +355,9 @@ def load_outstock(writer, outstock_sheet):
         stock_customer = get_cell_value(row, CUSTOMER_COL)
         
         formatted_row = {
-            "job_id": stock_pc, "stock_date": stock_date, "requester": stock_requester,
+            "stock_date": stock_date, "requester": stock_requester,
             "stock_id": stock, "item": stock_item, "quantity": stock_quantity, 
-            "department": stock_department, "customer": stock_customer
+            "department": stock_department
         }
         
         should_skip = False
@@ -303,8 +378,25 @@ def load_outstock(writer, outstock_sheet):
         if (isinstance(stock_quantity, str) and not stock_quantity.isdecimal()):
             writer.writerow(formatted_row)
             continue
+        
+        try:
+            job, created_job = Job.objects.get_or_create(job_id=stock_pc)
+        except Exception:
+            print(f"[CRIT] Failed to get or create Job {stock_pc}")
+            writer.writerow(formatted_row)
+            continue
+        
+        try:
+            customer, created_customer = Customer.objects.get_or_create(name=stock_customer)
+        except Exception:
+            print(f"[CRIT] Failed to get or create customer {stock_customer}")
+            writer.writerow(formatted_row)
+            continue
 
         try:
+            job.customer = customer
+            job.save()
+
             item = Item.objects.get(code=stock_item)
 
             if isinstance(stock_quantity, str):
@@ -316,13 +408,19 @@ def load_outstock(writer, outstock_sheet):
             
             item.outstock_number += Decimal(1)
             item.save()
-                
-            Outstock.objects.get_or_create(stock_id=stock, job_id=stock_pc, item=item,
-                                        defaults={"stock_date": stock_date,
-                                                  "requester": stock_requester,
-                                                  "quantity": stock_quantity,
-                                                  "department": stock_department,
-                                                  "customer": stock_customer })
+            
+            print(f"[INFO] Creating Outstock {formatted_row}, job id: {stock_pc}, customer: {stock_customer}, row: {row[0].row}")
+            Outstock.objects.get_or_create(
+                stock_id=stock, 
+                job=job, 
+                item=item,
+                defaults={
+                    "stock_date": stock_date,
+                    "requester": stock_requester,
+                    "quantity": stock_quantity,
+                    "department": stock_department,
+                    "store_type": store_type
+                })
         except ObjectDoesNotExist:
             print(f"[CRIT] No Matching Item {item.code}, Stock {stock} not added to database")
             writer.writerow(formatted_row)

@@ -64,7 +64,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
     
 
     const updateDataFor = useCallback(async (newPageName: PageName, newPageNumber:number, filters: Array<FilterOptionType>, active:boolean) => {
-        let url = `${process.env.REACT_APP_BASE_URL}/${newPageName}/?page=${newPageNumber}`
+        let url = `${process.env.REACT_APP_BASE_URL}/api/${newPageName}/?page=${newPageNumber}`
         // TODO: include filters
         filters.forEach(({name, value}) => {
             url = `${url}&${name}=${encodeURIComponent(value)}`
@@ -74,7 +74,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
             const response = await Requests.get(url, authHeader.current)
             setIsPageLoadingTo(false)
             if(!active) return
-
+            
             setPageDataTo(response.results)
             pageDisplayUpdater.updatePageNumbersToDisplay(
                 response.count, 
@@ -86,7 +86,6 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
         } catch (error) {
             setIsPageLoadingTo(false)
             setPageDataTo([])
-            clearToken()
         }
     }, [authHeader])
 
