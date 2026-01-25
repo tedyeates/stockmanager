@@ -75,7 +75,6 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
             setIsPageLoadingTo(false)
             if(!active) return
             
-            console.log(response)
             setPageDataTo(response.results)
             pageDisplayUpdater.updatePageNumbersToDisplay(
                 response.count, 
@@ -85,10 +84,8 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
             pageDisplayUpdater.updateHasNextPageTo(response.next)
 
         } catch (error) {
-            console.log(error)
             setIsPageLoadingTo(false)
             setPageDataTo([])
-            // clearToken()
         }
     }, [authHeader])
 
