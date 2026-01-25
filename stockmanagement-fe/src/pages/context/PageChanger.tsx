@@ -71,7 +71,6 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
         })
 
         try {
-            console.log(authHeader.current)
             const response = await Requests.get(url, authHeader.current)
             setIsPageLoadingTo(false)
             if(!active) return

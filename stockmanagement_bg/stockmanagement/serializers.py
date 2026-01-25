@@ -109,7 +109,7 @@ class LogEntrySerializer(serializers.ModelSerializer):
     
     
 class GroupSerializer(serializers.ModelSerializer):
-    modified = serializers.DateTimeField(format='%d/%m/%Y', required=False)
+    modified = serializers.DateTimeField(format='%d/%m/%Y', read_only=True)
 
     class Meta:
         model = Group 
@@ -145,8 +145,8 @@ class ItemSearchSerializer(serializers.ModelSerializer):
         
 
 class ItemUpdateSerializer(ItemSerializer):
-    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
-    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all())
+    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=False, allow_null=True)
+    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all(), required=False, allow_null=True)
     
 class ItemExportSerializer(ItemSerializer):
     group = serializers.SlugRelatedField(read_only=True, slug_field="name")
@@ -194,6 +194,7 @@ class InstockSerializer(StockSerializer):
 
 class InstockUpdateSerializer(InstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
+    job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all(), allow_null=True, required=False)
 
 class InstockExportSerializer(InstockSerializer):
     item = serializers.SlugRelatedField(read_only=True, slug_field='name')
@@ -208,8 +209,11 @@ class OutstockSerializer(StockSerializer):
 
 class OutstockUpdateSerializer(OutstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
+    job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all())
+    
+    class Meta(OutstockSerializer.Meta):
+        exclude=('remaining_quantity')
     
     
 class OutstockExportSerializer(OutstockSerializer):
     item = serializers.SlugRelatedField(read_only=True, slug_field='name')
-

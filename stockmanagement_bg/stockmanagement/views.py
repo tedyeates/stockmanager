@@ -5,12 +5,11 @@ from django.views import View
 from rest_framework.views import APIView
 from django.db.models import Q, Max, Min
 from django.utils.translation import gettext as _
-from rest_framework. serializers import ValidationError
+from rest_framework.serializers import ValidationError
 
 # from auditlog.models import LogEntry
 
 from stockmanagement.models import Job, Outstock, Item, Group, Instock, Brand, SearchSuggestion
-from stockmanagement.models import SearchSuggestion
 from stockmanagement.models import SEARCH_RESULTS
 from .serializers import *
 from stockmanagement.util.custom_viewsets import FieldViewMixin, FormDataMixin
@@ -61,7 +60,7 @@ class InstockViewSet(FormDataMixin):
     view_serializer_class = InstockSerializer
     export_serializer_class = InstockExportSerializer
     model = Instock
-    related_keys = ["item"]
+    related_keys = ["item", "job"]
     can_cut = False
     
     def update_price(self, connected_item, connected_item_price, price):
@@ -96,6 +95,7 @@ class InstockViewSet(FormDataMixin):
 
 
     def create(self, request):
+        print(request.data)
         created_instock = super().create(request)
         connected_item = self.get_connected_item(request)
         
@@ -161,7 +161,7 @@ class OutstockViewSet(FormDataMixin):
     view_serializer_class = OutstockSerializer
     export_serializer_class = OutstockExportSerializer
     model = Outstock
-    related_keys = ["item"]
+    related_keys = ["item", "job"]
     can_cut = False
     
     def update_quantity_left(self, request, item):
@@ -213,7 +213,7 @@ class InstockFieldView(FieldViewMixin):
 
 class OutstockFieldView(FieldViewMixin):
     model = Outstock
-    exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'instock']
+    exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'instock', 'remaining_quantity']
 
 
 class SelectFieldSearch(View):

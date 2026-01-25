@@ -74,7 +74,7 @@ export function Form(props: FormProps) {
         return (
             <ModelAutocomplete 
                 modelType={fieldName}
-                value={rowData[fieldName] ?? {}}
+                value={rowData[fieldName] ?? null}
                 onChange={props.onChange}
             />
         )
@@ -227,4 +227,3 @@ export function Form(props: FormProps) {
         </div>
     )
 }
-
