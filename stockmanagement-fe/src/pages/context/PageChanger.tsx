@@ -91,23 +91,21 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
 
 
     const requestModelInputsFor = useCallback(async (newPageName: PageName, active:boolean) => {
-
         // TODO: fix fields
-        axios
-            .get(`${process.env.REACT_APP_BASE_URL}/fields/${newPageName}`, {
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/fields/${newPageName}`, {
                 headers: authHeader.current
             })
-            .then(response => {
-                setIsPageLoadingTo(false)
+            if(!active) return
 
-                if(!active) return
-
-                setModalInputsTo(response.data)
-                setCurrentPageNameTo(newPageName)
-            }).catch(error => {
-                console.error(error.message)
-                console.error(error.response)
-            })
+            setModalInputsTo(response.data)
+            setCurrentPageNameTo(newPageName)
+        } catch (error: any) {
+            console.error(error.message)
+            if (error.response) console.error(error.response)
+        } finally {
+            if (active) setIsPageLoadingTo(false)
+        }
     }, [authHeader])
 
     useEffect(() => {

@@ -67,6 +67,15 @@ export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs
 
         // Override current data with new data
         let {id, ...newPopupData} = popupData
+
+        // Flatten nested objects to their IDs (for Foreign Keys)
+        Object.keys(newPopupData).forEach(key => {
+            const value = newPopupData[key]
+            if (value && typeof value === 'object' && 'id' in value) {
+                newPopupData[key] = value.id
+            }
+        })
+
         console.log(id)
         getRequestMethodFor(id, newPageName, newPopupData).then(() => {
             changePageTo(newPageName)

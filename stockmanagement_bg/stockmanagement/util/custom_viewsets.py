@@ -86,7 +86,6 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
 
         return filters.dict()
     
-    
     @cached_property
     def view_serialized_data(self):
         return self.view_serializer_class(self.data, many=True).data
@@ -94,8 +93,7 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
     @cached_property
     def export_serialized_data(self):
         return self.export_serializer_class(self.data, many=True).data
-     
-     
+
     @cached_property
     def count(self):
         if self.data is not None:
@@ -128,7 +126,6 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
         if choices:
             return [choice[0] for choice in choices]
         return None
-         
 
     def get_queryset(self):
         query = self.model.objects.filter(**self.filters)
@@ -137,7 +134,6 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
             
         return query
     
-        
     def list(self, request):
         """Gets model, field and related data based on model endpoint requested from
         
@@ -147,7 +143,6 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
 
         self.data = self.paginate_queryset(self.get_queryset())
         return self.get_paginated_response(self.view_serialized_data)
-    
     
     @action(detail=False)
     def export(self, request):
@@ -165,9 +160,6 @@ class FormDataMixin(DRFDjangoAuditModelMixin, viewsets.ModelViewSet):
             writer.writerow([data[header] for header in headers])
         
         return response
-        
-            
-
 
 class FieldViewMixin(views.APIView):
     permission_classes = (IsAuthenticated,) 
