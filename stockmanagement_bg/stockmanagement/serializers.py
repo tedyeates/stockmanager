@@ -212,7 +212,7 @@ class OutstockUpdateSerializer(OutstockSerializer):
     job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all())
     
     class Meta(OutstockSerializer.Meta):
-        exclude=('remaining_quantity')
+        exclude=('remaining_quantity',)
     
     
 class OutstockExportSerializer(OutstockSerializer):

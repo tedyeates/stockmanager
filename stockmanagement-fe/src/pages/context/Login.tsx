@@ -132,18 +132,16 @@ export function Login() {
 
         console.log(data)
 
-        try {
+        try {            
             const response = await Requests.post(
                 `${process.env.REACT_APP_BASE_URL}/login/`, 
                 data
             )
-            console.log(response)
             auth.signin(response.username, response.token, () => {
                 navigate(path, { replace: true })
             })
-        } catch {
-            // TODO: Handle error
-            return
+        } catch (e: any) {
+            if (e?.response?.data) setErrors(e.response.data)
         }
 
     }

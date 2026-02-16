@@ -34,8 +34,7 @@ class SearchSuggestionManager(models.Manager):
         ).order_by("value_length").distinct("name", "value", "value_length")[:self.number_results]
         self.number_results -= self.query.count()
         return self.query
-    
-    
+
 
 class SearchSuggestion(models.Model):
     GROUP = "Group"
@@ -57,7 +56,6 @@ class SearchSuggestion(models.Model):
     DJANGO_GREATER_THAN = "__gt"
     DJANGO_LESS_THAN = "__lt"
 
-    
     SEPERATOR = (
         (EQUALS, "Equals"),
         (GREATER_THAN, "Greater Than"),
@@ -76,7 +74,6 @@ class SearchSuggestion(models.Model):
     instance = GenericForeignKey("content_type", "object_id")
     
     objects = SearchSuggestionManager()
-        
     
     class Meta:
         verbose_name = _("Search Suggestion")
@@ -236,7 +233,7 @@ class Stock(Searchable):
 
     item = models.ForeignKey(Item, verbose_name=_("Item Stocked"), null=True, on_delete=models.SET_NULL)
     quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2, validators=[MinValueValidator(0)])
-    notes = models.CharField(_("Notes"), max_length=1000, null=True)
+    notes = models.CharField(_("Notes"), max_length=1000, null=True, blank=True)
     store_type = models.CharField(_("Store Type"), max_length=20, choices=StoreType.choices, default=StoreType.METAL)
     
     
@@ -257,6 +254,8 @@ class StockManager(models.Manager):
     
     def update_quantity(self, item, quantity):
         item.quantity += Decimal(quantity)
+        
+        return item.quantity
     
     
     def reset_sum(self, instock):
@@ -376,17 +375,20 @@ class OutstockManager(StockManager):
     
     @transaction.atomic
     def create_outstock(self, **kwargs):
-        Outstock.objects.create(**kwargs)
-        
-        self.current_item = kwargs.pop("item")
-        quantity = kwargs.pop("quantity")
+        self.current_item = kwargs.get("item")
+        quantity = Decimal(kwargs.get("quantity"))
         
         
         self.validate_quantity(quantity)
         self.update_outstock_number(self.current_item)
-        self.update_quantity(self.current_item, -1 * quantity)
+        
+        remaining_quantity = self.update_quantity(self.current_item, -1 * quantity)
+        kwargs["remaining_quantity"] = remaining_quantity
+        
+        outstock = Outstock.objects.create(**kwargs)
         
         self.current_item.save()
+        return outstock
         
         
     @transaction.atomic 
@@ -394,25 +396,31 @@ class OutstockManager(StockManager):
         defaults = kwargs.pop("defaults", None)
         outstock = Outstock.objects.get(**kwargs)
         
+        old_quantity = outstock.quantity
+        old_item = outstock.item
+        
         self.set_model_attributes(outstock, defaults)
         
         self.current_item = defaults.pop("item", outstock.item)
-            
         quantity = kwargs.pop("quantity", outstock.quantity)
-        old_item = outstock.item
-        old_quantity = outstock.quantity
 
         # Reset item
         self.update_quantity(old_item, old_quantity)
-        self.update_outstock_number(self.current_item)
+        self.update_outstock_number(old_item, -1)
         old_item.save()
+        
+        if self.current_item.pk == old_item.pk:
+            self.current_item.quantity = old_item.quantity
         
         # Validate we have room to store new quantity if different
         self.validate_quantity(quantity)
-        self.update_quantity(self.current_item, -1 * quantity)
-        self.current_item.save()
+        self.update_outstock_number(self.current_item)
+        remaining_quantity = self.update_quantity(self.current_item, -1 * quantity)
+        outstock.remaining_quantity = remaining_quantity
         
+        self.current_item.save()
         outstock.save()
+        return outstock
         
         
 class Customer(Searchable):

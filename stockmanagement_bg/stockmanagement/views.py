@@ -177,34 +177,22 @@ class OutstockViewSet(FormDataMixin):
         item.save()
     
     def create(self, request):
-        created_outstock = super().create(request)
-        item = Item.objects.get(id=request.data["item"])
-        item.outstock_number += 1
+        data = request.data.copy()
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
         
-        request.data["quantity"] = round(Decimal(request.data["quantity"]), 2)
-        self.update_quantity_left(request, item)
-        
-        return created_outstock
+        outstock = Outstock.objects.create_outstock(**serializer.validated_data)
+        return JsonResponse(OutstockSerializer(outstock).data, status=201)
 
 
     def update(self, request, pk=None):
-        outstock = Outstock.objects.get(pk=pk)
+        data = request.data.copy()
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
         
-        request.data["quantity"] = round(Decimal(request.data["quantity"]), 2)
+        outstock = Outstock.objects.update_outstock(pk=pk, defaults=serializer.validated_data)
+        return JsonResponse(OutstockSerializer(outstock).data, status=201)
         
-        updated_outstock = super().update(request, pk)
-        
-        old_item = outstock.item
-        old_item.quantity += outstock.quantity
-        old_item.outstock_number -= 1
-        old_item.save()
-        
-        item = Item.objects.get(id=request.data["item"])
-        self.update_quantity_left(request, item)
-        
-        return updated_outstock
-        
-
 
 class InstockFieldView(FieldViewMixin):
     model = Instock
