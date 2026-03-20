@@ -1,427 +1,449 @@
-from collections import defaultdict
 from decimal import Decimal, InvalidOperation
-from enum import Enum
 from openpyxl import load_workbook
-from os.path import dirname
-from stockmanagement.models import Customer, Group, Item, Instock, Brand, Job, Outstock, StoreType
-from django.core.exceptions import ObjectDoesNotExist
+from stockmanagement.models import Customer, Group, Item, Instock, Brand, Outstock, StoreType
 from datetime import datetime
 from pathlib import Path
-
 from stockmanagement_bg.settings import BASE_DIR
-
 import csv
+import json
+
+DATA_LOC = Path(__file__).resolve().parent.parent / "static" / "stockmanagement" / "data"
+PROGRESS_FILE = DATA_LOC / "progress.json"
+
+# How many rows to accumulate before flushing to DB
+FLUSH_EVERY = 200
 
 
-BASE_PATH = Path(__file__).resolve().parent.parent
-DATA_LOC = BASE_PATH / "static" / "stockmanagement" / "data"
+# ---------------------------------------------------------------------------
+# Progress tracking
+# ---------------------------------------------------------------------------
 
-class AccessoryItemColumns(Enum):
-    ITEM_CODE_COL = 0
-    ITEM_GROUP_COL = 1
-    ITEM_MAX_COL = 2
-    ITEM_MIN_COL = 3
-    ITEM_DESC_COL = 4
-    ITEM_BRAND_COL = 5
-    ITEM_UNIT_COL = 6
-    ITEM_WEIGHT_COL = 11
-    
+def load_progress():
+    if PROGRESS_FILE.exists():
+        with open(PROGRESS_FILE, "r") as f:
+            progress = json.load(f)
+            print(f"[RESUME] Resuming from: {progress}")
+            return progress
+    return {}
 
+
+def save_progress(progress):
+    with open(PROGRESS_FILE, "w") as f:
+        json.dump(progress, f, indent=2)
+
+
+def clear_progress():
+    if PROGRESS_FILE.exists():
+        PROGRESS_FILE.unlink()
+        print("[INFO] All sheets complete — progress file cleared")
+
+
+def progress_key(file_name, sheet_name):
+    return f"{file_name}::{sheet_name}"
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 def load_stock_data():
     load_excel(
-        "stock1_ACC_2025.xlsx", 
-        itemsheet="TABLEITEM", 
-        instocksheet="INSTOCK", 
-        outstocksheet="OUTSTOCK",
-        item_columns=AccessoryItemColumns,
-        store_type=StoreType.ACCESSORY
+        "ACC_2026.xlsx",
+        itemsheet="TABLE ITEM",
+        instocksheet="Instock",
+        outstocksheet="Outstock",
+        store_type=StoreType.ACCESSORY,
+        has_group_col=False,
+        outstock_header_row=1,
     )
     load_excel(
-        "Store2_metal_2025.xlsx", 
-        itemsheet="Tableitem", 
-        instocksheet="Instock", 
-        outstocksheet="PC",
-        store_type=StoreType.METAL
+        "METAL_2026.xlsx",
+        itemsheet="Tableitem",
+        instocksheet="Instock",
+        outstocksheet="Outstock.",
+        store_type=StoreType.METAL,
+        has_group_col=True,
+        outstock_header_row=2,
     )
+    clear_progress()
 
 
+# ---------------------------------------------------------------------------
+# Orchestration
+# ---------------------------------------------------------------------------
 
 def load_excel(file_name, **kwargs):
     file_path = DATA_LOC / file_name
-    print("Looking for file at:", file_path)
-    print("Exists:", file_path.exists())
-    workbook = load_workbook(file_path, data_only=True)
-    item_sheet = workbook[kwargs.pop("itemsheet")]
-    instock_sheet = workbook[kwargs.pop("instocksheet")]
-    outstock_sheet = workbook[kwargs.pop("outstocksheet")]
-    open_log_file("invalid_item", Item, load_items, item_sheet, kwargs)
-    open_log_file("invalid_instock", Instock, load_instock, instock_sheet, kwargs)
-    open_log_file("invalid_outstock", Outstock, load_outstock, outstock_sheet, kwargs)
-    
-    
-def open_log_file(file_name, model,  function, *args, **kwargs):
-    with open(f"{BASE_DIR}\stockmanagement\static\stockmanagement\{file_name}.csv", "w", newline="", encoding="utf-8") as csvfile:
-        columns = [field.name for field in model._meta.get_fields()]
+    print(f"Loading {file_path} (exists: {file_path.exists()})")
+    workbook = load_workbook(file_path, read_only=True, data_only=True)
 
+    store_type          = kwargs["store_type"]
+    has_group_col       = kwargs.get("has_group_col", False)
+    outstock_header_row = kwargs.get("outstock_header_row", 1)
+
+    open_log_file("invalid_item",     Item,     load_items,    workbook[kwargs["itemsheet"]],     file_name, kwargs["itemsheet"],     store_type, has_group_col)
+    open_log_file("invalid_instock",  Instock,  load_instock,  workbook[kwargs["instocksheet"]],  file_name, kwargs["instocksheet"],  store_type)
+    open_log_file("invalid_outstock", Outstock, load_outstock, workbook[kwargs["outstocksheet"]], file_name, kwargs["outstocksheet"], store_type, outstock_header_row)
+
+    workbook.close()
+
+
+def open_log_file(log_name, model, function, sheet, *args):
+    log_path = BASE_DIR / "stockmanagement" / "static" / "stockmanagement" / f"{log_name}.csv"
+    columns = [field.name for field in model._meta.get_fields()]
+    with open(log_path, "a", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=columns, restval="")
         writer.writeheader()
-        function(writer, *args, **kwargs)
-        
+        function(writer, sheet, *args)
 
-class Operation:
-    DIVIDE = "/"
-    MULTIPLY = "*"
-    PLUS = "+"
-    MINUS = "-"
-    OPERATIONS = [DIVIDE, MULTIPLY, PLUS, MINUS]
-    
-def execute_calcultation(number1, operation, number2):
-    if operation == Operation.DIVIDE:
-        return Decimal(number1 / number2)
-    if operation == Operation.MULTIPLY:
-        return Decimal(number1 * number2)
-    if operation == Operation.PLUS:
-        return Decimal(number1 + number2)
-    if operation == Operation.MINUS:
-        return Decimal(number1 - number2)
-        
-        
-def calculate_excel_function(function_string):
-    print(function_string)
-    # Remove equal sign
-    equation = function_string[1:]
-    
-    equation_split = defaultdict(str)
-    position = 0
-    for character in equation:
-        if character not in Operation.OPERATIONS:
-            equation_split[position] += character
-            continue
-        
-        equation_split[position + 1] = character
-        position += 2
-        
-    print(equation_split)
-    
-    for operation in Operation.OPERATIONS:
-        if operation not in equation: continue
-        
-        index = 0
-        while index < len(equation_split):
-            if equation_split[index] == operation:
-                first_number = Decimal(equation_split[index-1])
-                second_number = Decimal(equation_split[index+1])
-                equation_split[index-1] = execute_calcultation(first_number, operation, second_number)
-                del equation_split[index]
-                del equation_split[index+1]
-                index -= 1
-            index += 1
-            
-    return equation_split[0]
-    
 
-def get_cell_value(row, column, is_date=False, is_upper=False):
-    cell = row[column].value
-    if cell is None: return None
-    
-    if isinstance(cell, datetime): return cell
-    if isinstance(cell, int): cell = str(cell)
-    if is_date: return datetime.strptime(cell, '%d/%m/%y')
-    if is_upper: return cell.upper()
-    
-    if isinstance(cell, str) and cell.isdecimal():
-        cell = Decimal(cell)
-    
-    if not isinstance(cell, str) or cell.isdecimal(): 
-        return Decimal(round(cell,2))
-    
-    if isinstance(cell, str) and cell.startswith("="):
-        print(f"[WARN] Formula cell ignored: {cell}")
+# ---------------------------------------------------------------------------
+# Cell helpers
+# ---------------------------------------------------------------------------
+
+def get_value(row, col, is_upper=False):
+    val = row[col]
+    if val is None:
         return None
-    
-    return cell.strip()
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, (int, float)):
+        return val
+    if isinstance(val, str):
+        val = val.strip()
+        if val == "" or val.startswith("#"):
+            return None
+        return val.upper() if is_upper else val
+    return val
+
 
 def safe_decimal(value):
     if value is None:
         return None
     try:
-        return Decimal(value)
+        return Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
-        return None  
-    
-def load_items(writer, item_sheet, kwargs):
-    ITEM_CODE_COL = 1
-    ITEM_GROUP_COL = 2
-    ITEM_DESC_COL = 3
-    ITEM_BRAND_COL = 4
-    ITEM_UNIT_COL = 5
-    
-    item_columns = kwargs.pop("item_columns")
+        return None
 
-    for row in item_sheet.iter_rows(min_row=3):
-        
-        if item_columns:
-            item_code = get_cell_value(row, item_columns.ITEM_CODE_COL.value, is_upper=True)
 
-            item_desc = get_cell_value(row, item_columns.ITEM_DESC_COL.value)
-            item_brand = get_cell_value(row, item_columns.ITEM_BRAND_COL.value)
-            item_unit = get_cell_value(row, item_columns.ITEM_UNIT_COL.value)
-            item_group = get_cell_value(row, item_columns.ITEM_GROUP_COL.value)
-            item_max = get_cell_value(row, item_columns.ITEM_MAX_COL.value)
-            item_min = get_cell_value(row, item_columns.ITEM_MIN_COL.value)
-        else:
-            item_code = get_cell_value(row, ITEM_CODE_COL, is_upper=True)
-            item_desc = get_cell_value(row, ITEM_DESC_COL)
-            item_brand = get_cell_value(row, ITEM_BRAND_COL)
-            item_unit = get_cell_value(row, ITEM_UNIT_COL)
-            item_group = get_cell_value(row, ITEM_GROUP_COL)
-            item_max = None
-            item_min = None
-        
+# ---------------------------------------------------------------------------
+# Lookup caches
+# ---------------------------------------------------------------------------
 
-        item_min = safe_decimal(item_min)
-        item_max = safe_decimal(item_max)
-        formatted_row = {
-            "code": item_code, "description": item_desc, "brand": item_brand, "unit": item_unit, 
-            "group": item_group, "item_max": item_max, "item_min": item_min
-        }
-        
-        if item_code == None:
-            print(f"\033[91m[CRIT] No Item Code {row[0].row} {formatted_row}\033[0m")
-            writer.writerow(formatted_row)
+def build_caches():
+    return {
+        "items":     {i.code: i for i in Item.objects.all()},
+        "groups":    {g.name: g for g in Group.objects.all()},
+        "brands":    {b.name: b for b in Brand.objects.all()},
+        "customers": {c.name: c for c in Customer.objects.all()},
+    }
+
+
+def get_or_create_cached(cache, model, key_field, key_value, **defaults):
+    if key_value in cache:
+        return cache[key_value], False
+    obj, created = model.objects.get_or_create(**{key_field: key_value}, defaults=defaults)
+    cache[key_value] = obj
+    return obj, created
+
+
+# ---------------------------------------------------------------------------
+# Flush helpers
+# ---------------------------------------------------------------------------
+
+def flush_items(items_by_code, fields):
+    """Bulk update deduped item dict and clear it."""
+    if not items_by_code:
+        return
+    Item.objects.bulk_update(list(items_by_code.values()), fields, batch_size=500)
+    print(f"[INFO] Flushed {len(items_by_code)} item updates")
+    items_by_code.clear()
+
+
+def flush_stock_records(pending, model):
+    """Bulk create stock records, skipping any that already exist."""
+    if not pending:
+        return
+    model.objects.bulk_create(pending, ignore_conflicts=True, batch_size=500)
+    print(f"[INFO] Bulk created {len(pending)} {model.__name__} records")
+    pending.clear()
+
+
+
+# ---------------------------------------------------------------------------
+# Items
+# ---------------------------------------------------------------------------
+
+def load_items(writer, sheet, file_name, sheet_name, store_type, has_group_col):
+    progress    = load_progress()
+    key         = progress_key(file_name, sheet_name)
+    resume_from = progress.get(key, 0)
+
+    if resume_from:
+        print(f"[RESUME] Skipping to row {resume_from} for {key}")
+
+    COL = (
+        dict(code=0, group=1, desc=2, brand=3, unit=4, max_price=5, min_price=6)
+        if has_group_col else
+        dict(code=0, max_qty=1, min_qty=2, desc=3, brand=4, unit=5, max_price=6, min_price=7)
+    )
+
+    caches        = build_caches()
+    pending_items = []  # unsaved Item objects
+    pending_codes = {}  # code -> index in pending_items, for dedup
+
+    def flush_pending_items():
+        """Bulk create pending items then reload them into cache with DB-assigned PKs."""
+        if not pending_items:
+            return
+        Item.objects.bulk_create(pending_items, ignore_conflicts=True, batch_size=500)
+        # Re-query to get PKs — needed so instock/outstock FKs resolve correctly
+        for item in Item.objects.filter(code__in=list(pending_codes.keys())):
+            caches["items"][item.code] = item
+        print(f"[INFO] Bulk created {len(pending_items)} items")
+        pending_items.clear()
+        pending_codes.clear()
+
+    for row_num, row_vals in enumerate(sheet.iter_rows(min_row=2, values_only=True)):
+        if row_num < resume_from:
             continue
-        
+
+        code = get_value(row_vals, COL["code"], is_upper=True)
+        if not code:
+            continue
+        code = str(code)
+
+        desc      = get_value(row_vals, COL["desc"])
+        brand_val = get_value(row_vals, COL["brand"])
+        unit      = get_value(row_vals, COL["unit"])
+        group_val = get_value(row_vals, COL["group"]) if has_group_col else None
+        max_qty   = safe_decimal(get_value(row_vals, COL["max_qty"])) if "max_qty" in COL else None
+        min_qty   = safe_decimal(get_value(row_vals, COL["min_qty"])) if "min_qty" in COL else None
+
         group = None
-        if item_group:
-            item_group = item_group.strip()
-            if item_group != "":
-                group, _ = Group.objects.get_or_create(name=item_group)
-            
-            
+        if group_val:
+            group, _ = get_or_create_cached(caches["groups"], Group, "name", str(group_val).strip())
+
         brand = None
-        if item_brand:
-            item_brand = item_brand.strip()
-            brand, _ = Brand.objects.get_or_create(name=item_brand)
+        if brand_val:
+            brand, _ = get_or_create_cached(caches["brands"], Brand, "name", str(brand_val).strip())
 
-        
-        print(f"[INFO] Creating item {formatted_row} row: {row[0].row}")
-        Item.objects.get_or_create(
-            code=item_code, 
-            defaults={
-                "description": item_desc,
-                "brand": brand,
-                "unit": item_unit,
-                "group": group,
-                "min_quanity": item_min,
-                "max_quanity": item_max
-        })
+        # Skip codes already in DB or already queued
+        if code not in caches["items"] and code not in pending_codes:
+            pending_codes[code] = len(pending_items)
+            pending_items.append(Item(
+                code=code, description=desc or "",
+                brand=brand, unit=unit, group=group,
+                min_quanity=min_qty, max_quanity=max_qty,
+            ))
 
-def get_min_price(stock_price, item):
-    if item.min_price == -1 or item.min_price is None:
-        return stock_price
-    if stock_price is None:
-        return item.min_price
-    return min(item.min_price, stock_price)
+        if len(pending_items) >= FLUSH_EVERY:
+            flush_pending_items()
+            progress[key] = row_num + 1
+            save_progress(progress)
+            print(f"[PROGRESS] {sheet_name} — row {row_num + 1}")
 
-def get_max_price(stock_price, item):
-    if item.max_price == -1 or item.max_price is None:
-        return stock_price
-    if stock_price is None:
-        return item.max_price
-    return max(item.max_price, stock_price)
+    flush_pending_items()
+    progress.pop(key, None)
+    save_progress(progress)
+    print(f"[INFO] Items sheet complete: {sheet_name}")
 
 
-def load_instock(writer, stock_sheet, kwargs):
-    DATE_COL = 0
-    IV_COL = 1
-    PO_COL = 2
-    PC_COL = 3
-    SUPPLIER_COL = 4
-    ITEM_COL = 5
-    QUANTITY_COL = 6
-    PRICE_COL = 7
+# ---------------------------------------------------------------------------
+# Instock
+# ---------------------------------------------------------------------------
 
-    store_type = kwargs.get("store_type")
+def load_instock(writer, sheet, file_name, sheet_name, store_type):
+    progress    = load_progress()
+    key         = progress_key(file_name, sheet_name)
+    resume_from = progress.get(key, 0)
 
-    count = 0
-    for row in stock_sheet.iter_rows(min_row=3):
-        count+=1
-        stock_iv = get_cell_value(row, IV_COL)
-        stock_item = get_cell_value(row, ITEM_COL, is_upper=True)
-        stock_date = get_cell_value(row, DATE_COL, is_date=True)
-        stock_po =  get_cell_value(row, PO_COL)
-        stock_pc = get_cell_value(row, PC_COL)
-        stock_supplier = get_cell_value(row, SUPPLIER_COL)
-        stock_quantity = get_cell_value(row, QUANTITY_COL)
-        stock_price = get_cell_value(row, PRICE_COL)
-            
-        formatted_row = {
-            "invoice_id": stock_iv, "item": stock_item, "quantity": stock_quantity,
-            "stock_date": stock_date, "purchase_order_id": stock_po,
-            "supplier": stock_supplier, "price": stock_price
-        }
-        should_skip = False
-        for cell in [stock_iv, stock_item]:
-            if cell is None or cell == "":
-                should_skip = True
-                
-        if should_skip: 
-            writer.writerow(formatted_row)
-            continue
-        
-            
-        if stock_quantity is None or stock_quantity == "":
-            print("[CRIT] No Quantity")
-            writer.writerow(formatted_row)
-            continue
-        
-        if stock_price is None or stock_price == "":
-            print("[CRIT] No Price")
-            writer.writerow(formatted_row)
-            continue
-        
-        if (isinstance(stock_quantity, str) and not stock_quantity.isdecimal()) or (isinstance(stock_price, str) and not stock_price.isdecimal()):
-            writer.writerow(formatted_row)
+    if resume_from:
+        print(f"[RESUME] Skipping to row {resume_from} for {key}")
+
+    DATE_COL, IV_COL, PO_COL, PC_COL            = 0, 1, 2, 3
+    SUPPLIER_COL, ITEM_COL, QTY_COL, PRICE_COL  = 4, 5, 6, 7
+    ITEM_FIELDS = ["min_price", "max_price", "sum_price", "quantity", "instock_number"]
+
+    caches          = build_caches()
+    items_by_code   = {}   # deduped: only the latest state of each item
+    pending_instock = []   # batch of Instock objects to bulk_create
+
+    # Pre-load existing instock keys to avoid duplicate inserts
+    existing_instock = set(
+        Instock.objects.values_list("invoice_id", "item_id", "purchase_order_id")
+    )
+
+    for row_num, row_vals in enumerate(sheet.iter_rows(min_row=2, values_only=True)):
+        if row_num < resume_from:
             continue
 
-        try:
-            item = Item.objects.get(code=stock_item)
-        except ObjectDoesNotExist:
-            print(f"[CRIT] No Matching Item {stock_item}, Stock {stock_iv} not added to database {stock_price} {stock_pc} {stock_po}")
-            writer.writerow(formatted_row)
-            continue
-        
-        job = None
-        if stock_pc is not None:
-            try:
-                job, created_job = Job.objects.get_or_create(job_id=stock_pc)
-            except Exception:
-                print(f"[CRIT] Failed to get or create Job {stock_pc}")
-                writer.writerow(formatted_row)
-                continue
+        iv      = get_value(row_vals, IV_COL)
+        item_id = get_value(row_vals, ITEM_COL, is_upper=True)
 
-        if isinstance(stock_price, str):
-            stock_price.replace(" ", "")
-
-        if isinstance(stock_quantity, str):
-            stock_quantity.replace(" ", "")
-        
-        total_price = Decimal(stock_price) * Decimal(stock_quantity)
-        item.min_price = get_min_price(stock_price, item)
-        item.max_price = get_max_price(stock_price, item)
-        item.sum_price = sum([Decimal(item.sum_price), total_price])
-        item.quantity += stock_quantity
-        item.instock_number += Decimal(1)
-        item.save()
-            
-        print(f"[INFO] Creating Instock {formatted_row}, job id: {stock_pc} row: {row[0].row}")
-        Instock.objects.get_or_create(
-            invoice_id=stock_iv, item=item, purchase_order_id=stock_po,
-            defaults={
-                "stock_date": stock_date,
-                "supplier": stock_supplier,
-                "quantity": stock_quantity,
-                "price": stock_price,
-                "store_type": store_type,
-                "job": job
-            }
-        )
-
-
-def load_outstock(writer, outstock_sheet, kwargs):
-    DATE_COL = 0
-    PC_COL = 1
-    CUSTOMER_COL = 2
-    STOCK_COL = 3
-    REQUESTER_COL = 4
-    DEPARTMENT_COL = 5
-    ITEM_COL = 6
-    QUANTITY_COL = 7
-    
-    store_type = kwargs.get("store_type")
-
-    count = 0
-    for row in outstock_sheet.iter_rows(min_row=3):
-        count+=1
-        
-        stock_pc = get_cell_value(row, PC_COL)
-        stock =  get_cell_value(row, STOCK_COL)
-        stock_item = get_cell_value(row, ITEM_COL, is_upper=True)
-        stock_date = get_cell_value(row, DATE_COL, is_date=True)
-        stock_requester = get_cell_value(row, REQUESTER_COL)
-        stock_quantity = get_cell_value(row, QUANTITY_COL)
-        stock_department = get_cell_value(row, DEPARTMENT_COL)
-        stock_customer = get_cell_value(row, CUSTOMER_COL)
-        
-        formatted_row = {
-            "stock_date": stock_date, "requester": stock_requester,
-            "stock_id": stock, "item": stock_item, "quantity": stock_quantity, 
-            "department": stock_department
-        }
-        
-        should_skip = False
-        for cell in [stock_pc, stock, stock_item]:
-            if cell is None or cell == "":
-                should_skip = True
-                
-        if should_skip: 
-            writer.writerow(formatted_row)
-            continue
-        
-            
-        if stock_quantity is None or stock_quantity == "":
-            print("[CRIT] No Quantity")
-            writer.writerow(formatted_row)
-            continue
-        
-        if (isinstance(stock_quantity, str) and not stock_quantity.isdecimal()):
-            writer.writerow(formatted_row)
-            continue
-        
-        try:
-            job, created_job = Job.objects.get_or_create(job_id=stock_pc)
-        except Exception:
-            print(f"[CRIT] Failed to get or create Job {stock_pc}")
-            writer.writerow(formatted_row)
-            continue
-        
-        try:
-            customer, created_customer = Customer.objects.get_or_create(name=stock_customer)
-        except Exception:
-            print(f"[CRIT] Failed to get or create customer {stock_customer}")
-            writer.writerow(formatted_row)
+        if not iv or not item_id:
             continue
 
-        try:
-            job.customer = customer
-            job.save()
+        item_id  = str(item_id)
+        date     = get_value(row_vals, DATE_COL)
+        po       = get_value(row_vals, PO_COL)
+        pc       = get_value(row_vals, PC_COL)
+        supplier = get_value(row_vals, SUPPLIER_COL)
+        quantity = safe_decimal(get_value(row_vals, QTY_COL))
+        price    = safe_decimal(get_value(row_vals, PRICE_COL))
 
-            item = Item.objects.get(code=stock_item)
+        if quantity is None or price is None:
+            print(f"[CRIT] Missing qty/price — IV {iv} item {item_id}")
+            writer.writerow({"invoice_id": iv, "item": item_id})
+            continue
 
-            if isinstance(stock_quantity, str):
-                stock_quantity.replace(" ", "")
-                
-            item.quantity -= Decimal(stock_quantity)
-            if item.quantity < 0:
-                item.quantity = 0
-            
-            item.outstock_number += Decimal(1)
-            item.save()
-            
-            print(f"[INFO] Creating Outstock {formatted_row}, job id: {stock_pc}, customer: {stock_customer}, row: {row[0].row}")
-            Outstock.objects.get_or_create(
-                stock_id=stock, 
-                job=job, 
-                item=item,
-                defaults={
-                    "stock_date": stock_date,
-                    "requester": stock_requester,
-                    "quantity": stock_quantity,
-                    "department": stock_department,
-                    "store_type": store_type
-                })
-        except ObjectDoesNotExist:
-            print(f"[CRIT] No Matching Item {item.code}, Stock {stock} not added to database")
-            writer.writerow(formatted_row)
-    
+        item = caches["items"].get(item_id)
+        if item is None:
+            print(f"[CRIT] No matching item {item_id} for instock {iv}")
+            writer.writerow({"invoice_id": iv, "item": item_id})
+            continue
+
+        job = str(pc) if pc is not None else None
+
+        # Accumulate item aggregate changes in memory — deduped by code
+        tracked = items_by_code.get(item_id, item)
+        total = Decimal(price) * Decimal(quantity)
+        tracked.min_price     = _min_price(price, tracked)
+        tracked.max_price     = _max_price(price, tracked)
+        tracked.sum_price     = (tracked.sum_price or Decimal(0)) + total
+        tracked.quantity      = (tracked.quantity  or Decimal(0)) + quantity
+        tracked.instock_number += 1
+        items_by_code[item_id] = tracked
+
+        # Queue instock record if not already in DB
+        instock_key = (str(iv), item.pk, po)
+        if instock_key not in existing_instock:
+            pending_instock.append(Instock(
+                invoice_id=str(iv), item=item, purchase_order_id=po,
+                stock_date=date, supplier=supplier,
+                quantity=quantity, price=price,
+                store_type=store_type, job=job,
+            ))
+            existing_instock.add(instock_key)
+
+        if len(pending_instock) >= FLUSH_EVERY:
+            flush_stock_records(pending_instock, Instock)
+            flush_items(items_by_code, ITEM_FIELDS)
+            progress[key] = row_num + 1
+            save_progress(progress)
+            print(f"[PROGRESS] {sheet_name} — row {row_num + 1}")
+
+    # Final flush
+    flush_stock_records(pending_instock, Instock)
+    flush_items(items_by_code, ITEM_FIELDS)
+    progress.pop(key, None)
+    save_progress(progress)
+    print(f"[INFO] Instock sheet complete: {sheet_name}")
+
+
+# ---------------------------------------------------------------------------
+# Outstock
+# ---------------------------------------------------------------------------
+
+def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
+    progress    = load_progress()
+    key         = progress_key(file_name, sheet_name)
+    resume_from = progress.get(key, 0)
+
+    if resume_from:
+        print(f"[RESUME] Skipping to row {resume_from} for {key}")
+
+    DATE_COL, JOB_COL, CUST_COL, ST_COL  = 0, 1, 2, 3
+    REQ_COL, DEPT_COL, ITEM_COL, QTY_COL = 4, 5, 6, 7
+    ITEM_FIELDS = ["quantity", "outstock_number"]
+
+    caches           = build_caches()
+    items_by_code    = {}
+    pending_outstock = []
+
+    # Pre-load existing outstock keys
+    existing_outstock = set(
+        Outstock.objects.values_list("stock_id", "job", "item_id")
+    )
+
+    for row_num, row_vals in enumerate(sheet.iter_rows(min_row=header_row + 2, values_only=True)):
+        if row_num < resume_from:
+            continue
+
+        job_val  = get_value(row_vals, JOB_COL)
+        stock_id = get_value(row_vals, ST_COL)
+        item_id  = get_value(row_vals, ITEM_COL, is_upper=True)
+
+        if not job_val or not stock_id or not item_id:
+            continue
+
+        item_id   = str(item_id)
+        date      = get_value(row_vals, DATE_COL)
+        cust_val  = get_value(row_vals, CUST_COL)
+        requester = get_value(row_vals, REQ_COL)
+        dept      = get_value(row_vals, DEPT_COL)
+        quantity  = safe_decimal(get_value(row_vals, QTY_COL))
+
+        if quantity is None:
+            print(f"[CRIT] No quantity — stock {stock_id} item {item_id}")
+            writer.writerow({"stock_id": stock_id, "item": item_id})
+            continue
+
+        item = caches["items"].get(item_id)
+        if item is None:
+            print(f"[CRIT] No matching item {item_id} for outstock {stock_id}")
+            writer.writerow({"stock_id": stock_id, "item": item_id})
+            continue
+
+        job = str(job_val)
+
+        customer = None
+        if cust_val:
+            customer, _ = get_or_create_cached(caches["customers"], Customer, "name", str(cust_val))
+
+        # Accumulate item changes — deduped by code
+        tracked = items_by_code.get(item_id, item)
+        tracked.quantity = max(Decimal(0), (tracked.quantity or Decimal(0)) - quantity)
+        tracked.outstock_number += 1
+        items_by_code[item_id] = tracked
+
+        # Queue outstock record if not already in DB
+        outstock_key = (str(stock_id), job, item.pk)
+        if outstock_key not in existing_outstock:
+            pending_outstock.append(Outstock(
+                stock_id=str(stock_id), job=job, item=item,
+                stock_date=date, requester=requester or "",
+                quantity=quantity, department=dept,
+                store_type=store_type, customer=customer,
+            ))
+            existing_outstock.add(outstock_key)
+
+        if len(pending_outstock) >= FLUSH_EVERY:
+            flush_stock_records(pending_outstock, Outstock)
+            flush_items(items_by_code, ITEM_FIELDS)
+            progress[key] = row_num + 1
+            save_progress(progress)
+            print(f"[PROGRESS] {sheet_name} — row {row_num + 1}")
+
+    # Final flush
+    flush_stock_records(pending_outstock, Outstock)
+    flush_items(items_by_code, ITEM_FIELDS)
+    progress.pop(key, None)
+    save_progress(progress)
+    print(f"[INFO] Outstock sheet complete: {sheet_name}")
+
+
+# ---------------------------------------------------------------------------
+# Price helpers
+# ---------------------------------------------------------------------------
+
+def _min_price(new_price, item):
+    if item.min_price is None or item.min_price < 0:
+        return Decimal(str(new_price))
+    return min(item.min_price, Decimal(str(new_price)))
+
+
+def _max_price(new_price, item):
+    if item.max_price is None or item.max_price < 0:
+        return Decimal(str(new_price))
+    return max(item.max_price, Decimal(str(new_price)))
