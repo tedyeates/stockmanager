@@ -40,14 +40,14 @@ export function Popup({isPageLoading, currentPageName, changePageTo, modalInputs
     const AUTH_HEADER = authContext.authHeader.current
 
     function createModelOfType(modelName: PageName, modelAttributes: DataType): Promise<AxiosResponse<any>>{
-        return axios.post(`${process.env.REACT_APP_BASE_URL}/api/${modelName}/`, modelAttributes, {
+        return axios.post(`${import.meta.env.VITE_BASE_URL}/api/${modelName}/`, modelAttributes, {
             headers: AUTH_HEADER
         })
     }
 
     function updateModelOfType(id:number, modelName: PageName, modelAttributes: DataType): Promise<AxiosResponse<any>> {
         console.log(id)
-        return axios.put(`${process.env.REACT_APP_BASE_URL}/api/${modelName}/${id}/`, modelAttributes, {
+        return axios.put(`${import.meta.env.VITE_BASE_URL}/api/${modelName}/${id}/`, modelAttributes, {
             headers: AUTH_HEADER
         })
     }

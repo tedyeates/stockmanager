@@ -26,7 +26,7 @@ export function Search({pageDisplay, currentPageName, searchFilters, searchPageF
 
     const suggestions = useMemo(() => {
         return throttle((searchTerm:string, active:boolean) => {
-            axios.get( `${process.env.REACT_APP_BASE_URL}/search/${currentPageName}?search_term=${searchTerm}`, {
+            axios.get( `${import.meta.env.VITE_BASE_URL}/search/${currentPageName}?search_term=${searchTerm}`, {
                 headers: auth.authHeader.current
             }).then(response => {
                 if (!active) return undefined

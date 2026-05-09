@@ -28,7 +28,7 @@ export function TableToolbar(){
         setIsExportDownloadingTo(true)
 
         console.log("exporting")
-        let url = `${process.env.REACT_APP_BASE_URL}/api/${pageTypeChanger.currentPageName}/export/`
+        let url = `${import.meta.env.VITE_BASE_URL}/api/${pageTypeChanger.currentPageName}/export/`
         pageTypeChanger.searchFilters.forEach(({name, value}, index) => {
             if(index === 0)
                 url = `${url}?${name}=${value}`
