@@ -16,3 +16,4 @@ www/
 *.xlsx
 
 **/stockmanagement_bg/static/** 
+**/backups/

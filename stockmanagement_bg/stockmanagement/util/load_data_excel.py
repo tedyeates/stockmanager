@@ -161,10 +161,10 @@ def flush_items(items_by_code, fields):
 
 
 def flush_stock_records(pending, model):
-    """Bulk create stock records, skipping any that already exist."""
+    """Bulk create stock records."""
     if not pending:
         return
-    model.objects.bulk_create(pending, ignore_conflicts=True, batch_size=500)
+    model.objects.bulk_create(pending, batch_size=500)
     print(f"[INFO] Bulk created {len(pending)} {model.__name__} records")
     pending.clear()
 
@@ -269,11 +269,6 @@ def load_instock(writer, sheet, file_name, sheet_name, store_type):
     items_by_code   = {}   # deduped: only the latest state of each item
     pending_instock = []   # batch of Instock objects to bulk_create
 
-    # Pre-load existing instock keys to avoid duplicate inserts
-    existing_instock = set(
-        Instock.objects.values_list("invoice_id", "item_id", "purchase_order_id")
-    )
-
     for row_num, row_vals in enumerate(sheet.iter_rows(min_row=2, values_only=True)):
         if row_num < resume_from:
             continue
@@ -315,16 +310,12 @@ def load_instock(writer, sheet, file_name, sheet_name, store_type):
         tracked.instock_number += 1
         items_by_code[item_id] = tracked
 
-        # Queue instock record if not already in DB
-        instock_key = (str(iv), item.pk, po)
-        if instock_key not in existing_instock:
-            pending_instock.append(Instock(
-                invoice_id=str(iv), item=item, purchase_order_id=po,
-                stock_date=date, supplier=supplier,
-                quantity=quantity, price=price,
-                store_type=store_type, job=job,
-            ))
-            existing_instock.add(instock_key)
+        pending_instock.append(Instock(
+            invoice_id=str(iv), item=item, purchase_order_id=po,
+            stock_date=date, supplier=supplier,
+            quantity=quantity, price=price,
+            store_type=store_type, job=job,
+        ))
 
         if len(pending_instock) >= FLUSH_EVERY:
             flush_stock_records(pending_instock, Instock)
@@ -360,11 +351,6 @@ def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
     caches           = build_caches()
     items_by_code    = {}
     pending_outstock = []
-
-    # Pre-load existing outstock keys
-    existing_outstock = set(
-        Outstock.objects.values_list("stock_id", "job", "item_id")
-    )
 
     for row_num, row_vals in enumerate(sheet.iter_rows(min_row=header_row + 2, values_only=True)):
         if row_num < resume_from:
@@ -407,16 +393,12 @@ def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
         tracked.outstock_number += 1
         items_by_code[item_id] = tracked
 
-        # Queue outstock record if not already in DB
-        outstock_key = (str(stock_id), job, item.pk)
-        if outstock_key not in existing_outstock:
-            pending_outstock.append(Outstock(
-                stock_id=str(stock_id), job=job, item=item,
-                stock_date=date, requester=requester or "",
-                quantity=quantity, department=dept,
-                store_type=store_type, customer=customer,
-            ))
-            existing_outstock.add(outstock_key)
+        pending_outstock.append(Outstock(
+            stock_id=str(stock_id), job=job, item=item,
+            stock_date=date, requester=requester or "",
+            quantity=quantity, department=dept,
+            store_type=store_type, customer=customer,
+        ))
 
         if len(pending_outstock) >= FLUSH_EVERY:
             flush_stock_records(pending_outstock, Outstock)

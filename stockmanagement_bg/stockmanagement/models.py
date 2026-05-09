@@ -215,7 +215,7 @@ class Instock(Stock):
     number_fields = {"quantity", "price"}
 
     invoice_id = models.CharField(_("Invoice ID"), max_length=50, null=False, default="UNDEFINED")
-    job = models.CharField(_("Job"), max_length=200, null=True) 
+    job = models.ForeignKey('Job', verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
     price = models.DecimalField(_("Price"), max_digits=50, decimal_places=2, null=True, validators=[MinValueValidator(0)])
     purchase_order_id = models.CharField(_("PO ID"), max_length=50, null=True)
     supplier = models.CharField(_("Supplier"), max_length=50, null=True)
@@ -301,6 +301,23 @@ class Customer(models.Model):
     def __str__(self):
         return str(self.name)
 
+
+class Job(models.Model):
+    search_fields = ["job_id", "name"]
+
+    job_id = models.IntegerField(_("Job ID"), primary_key=True)
+    name = models.CharField(_("Job Name"), max_length=200, null=True)
+    customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = "job"
+        managed = False
+        verbose_name = _("Job")
+        verbose_name_plural = _("Jobs")
+
+    def __str__(self):
+        return f"{self.job_id} - {self.name}"
+
 class Outstock(Stock):
     search_fields = ["stock_id", "requester", "department", "quantity"]
     number_fields = {"quantity"}
@@ -311,7 +328,7 @@ class Outstock(Stock):
     remaining_quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2, validators=[MinValueValidator(0)], null=True)
     objects = OutstockManager()
     
-    job = models.CharField(_("Job"), max_length=200, null=True)
+    job = models.ForeignKey('Job', verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
     customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
     
 
