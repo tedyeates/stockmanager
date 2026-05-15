@@ -1,0 +1,4 @@
+# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\stockmanagement\views.py
+# hypothesis_version: 6.141.1
+
+[201, '-modified', 'NEW ITEM', 'brand', 'brand__name', 'code', 'created_date', 'customer__name', 'department', 'description', 'exact', 'group', 'group__name', 'gte', 'id', 'instock', 'instock_number', 'invoice_id', 'item', 'item__name', 'job', 'lte', 'max_price', 'max_quanity', 'min_price', 'min_quanity', 'modified', 'name', 'notes', 'outstock', 'outstock_number', 'price', 'price__max', 'price__min', 'purchase_order_id', 'quanitity', 'quantity', 'remaining_quantity', 'requester', 'size', 'stock', 'stock_date', 'stock_id', 'stock_ptr', 'store_type', 'sum_price', 'supplier', 'unit']

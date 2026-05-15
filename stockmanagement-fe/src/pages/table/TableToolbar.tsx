@@ -7,7 +7,6 @@ import { Pagination } from "./Pagination";
 import { Search } from "./Search";
 
 import { title } from "../../util/strings";
-import axios from "axios";
 import { useAuth } from "../context/Login";
 import { useState } from "react";
 import fileDownload from "js-file-download";
@@ -29,19 +28,18 @@ export function TableToolbar(){
 
         console.log("exporting")
         let url = `${import.meta.env.VITE_BASE_URL}/api/${pageTypeChanger.currentPageName}/export/`
-        pageTypeChanger.searchFilters.forEach(({name, value}, index) => {
-            if(index === 0)
-                url = `${url}?${name}=${value}`
-            else
-                url = `${url}&${name}=${value}`
-        })
+        if (pageTypeChanger.searchTerm.trim().length > 0) {
+            url = `${url}?search=${encodeURIComponent(pageTypeChanger.searchTerm)}`
+        }
         console.log(url)
-        axios.get(url, {
-            headers: authHeader.current,
-            responseType: 'blob'
+        fetch(url, {
+            method: 'GET',
+            headers: authHeader.current as HeadersInit,
         }).then(res => {
-            console.log(res)
-            fileDownload(res.data, `${pageTypeChanger.currentPageName}.csv`)
+            if (!res.ok) throw new Error(`Export failed: ${res.status}`)
+            return res.blob()
+        }).then(blob => {
+            fileDownload(blob, `${pageTypeChanger.currentPageName}.csv`)
         }).finally(() => {
             setIsExportDownloadingTo(false)
         })
@@ -50,11 +48,9 @@ export function TableToolbar(){
     return (
         <div className="background-color h-22 px-4 py-2 flex justify-between sm:px-6">
             <Search 
-                pageDisplay={pageTypeChanger.pageDisplay}  
-                currentPageName={pageTypeChanger.currentPageName} 
-                searchFilters={pageTypeChanger.searchFilters} 
-                searchPageFor={pageTypeChanger.tableLoader.searchPageFor} 
-                removeSearchFilter={pageTypeChanger.tableLoader.removeSearchFilter} 
+                searchTerm={pageTypeChanger.searchTerm}
+                onSearchChange={pageTypeChanger.updateSearchTerm}
+                resultCount={pageTypeChanger.pageDisplay.numberOfResults}
             />
             <div className="h-1/2 flex">
                 {!pageTypeChanger.isPageLoading &&

@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 from openpyxl import load_workbook
-from stockmanagement.models import Customer, Group, Item, Instock, Brand, Outstock, StoreType
+from stockmanagement.models import Customer, Group, Item, Instock, Brand, Outstock, StoreType, Job
 from datetime import datetime
 from pathlib import Path
 from stockmanagement_bg.settings import BASE_DIR
@@ -90,10 +90,12 @@ def load_excel(file_name, **kwargs):
 
 def open_log_file(log_name, model, function, sheet, *args):
     log_path = BASE_DIR / "stockmanagement" / "static" / "stockmanagement" / f"{log_name}.csv"
-    columns = [field.name for field in model._meta.get_fields()]
+    columns = [field.name for field in model._meta.get_fields()] + ["source_file", "row_number", "notes"]
+    write_header = not log_path.exists() or log_path.stat().st_size == 0
     with open(log_path, "a", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=columns, restval="")
-        writer.writeheader()
+        if write_header:
+            writer.writeheader()
         function(writer, sheet, *args)
 
 
@@ -161,12 +163,13 @@ def flush_items(items_by_code, fields):
 
 
 def flush_stock_records(pending, model):
-    """Bulk create stock records."""
+    """Bulk create stock records and return created objects."""
     if not pending:
-        return
-    model.objects.bulk_create(pending, batch_size=500)
-    print(f"[INFO] Bulk created {len(pending)} {model.__name__} records")
+        return []
+    created = model.objects.bulk_create(pending, batch_size=500)
+    print(f"[INFO] Bulk created {len(created)} {model.__name__} records")
     pending.clear()
+    return created
 
 
 
@@ -210,6 +213,8 @@ def load_items(writer, sheet, file_name, sheet_name, store_type, has_group_col):
 
         code = get_value(row_vals, COL["code"], is_upper=True)
         if not code:
+            print(f"[SKIP] Items row {row_num + 2} — empty code")
+            writer.writerow({"code": "", "source_file": file_name, "row_number": row_num + 2, "notes": "empty code"})
             continue
         code = str(code)
 
@@ -229,7 +234,10 @@ def load_items(writer, sheet, file_name, sheet_name, store_type, has_group_col):
             brand, _ = get_or_create_cached(caches["brands"], Brand, "name", str(brand_val).strip())
 
         # Skip codes already in DB or already queued
-        if code not in caches["items"] and code not in pending_codes:
+        if code in caches["items"] or code in pending_codes:
+            print(f"[SKIP] Items row {row_num + 2} — duplicate code {code}")
+            writer.writerow({"code": code, "source_file": file_name, "row_number": row_num + 2, "notes": "duplicate code"})
+        else:
             pending_codes[code] = len(pending_items)
             pending_items.append(Item(
                 code=code, description=desc or "",
@@ -268,6 +276,7 @@ def load_instock(writer, sheet, file_name, sheet_name, store_type):
     caches          = build_caches()
     items_by_code   = {}   # deduped: only the latest state of each item
     pending_instock = []   # batch of Instock objects to bulk_create
+    pending_jobs    = []   # parallel list of job_id strings for M2M assignment
 
     for row_num, row_vals in enumerate(sheet.iter_rows(min_row=2, values_only=True)):
         if row_num < resume_from:
@@ -277,6 +286,8 @@ def load_instock(writer, sheet, file_name, sheet_name, store_type):
         item_id = get_value(row_vals, ITEM_COL, is_upper=True)
 
         if not iv or not item_id:
+            print(f"[SKIP] Instock row {row_num + 2} — missing iv={iv} or item_id={item_id}")
+            writer.writerow({"invoice_id": iv or "", "item": item_id or "", "source_file": file_name, "row_number": row_num + 2, "notes": "missing iv or item_id"})
             continue
 
         item_id  = str(item_id)
@@ -288,44 +299,50 @@ def load_instock(writer, sheet, file_name, sheet_name, store_type):
         price    = safe_decimal(get_value(row_vals, PRICE_COL))
 
         if quantity is None or price is None:
-            print(f"[CRIT] Missing qty/price — IV {iv} item {item_id}")
-            writer.writerow({"invoice_id": iv, "item": item_id})
-            continue
+            print(f"[WARN] Missing qty/price — IV {iv} item {item_id} (row saved with nulls)")
 
         item = caches["items"].get(item_id)
         if item is None:
             print(f"[CRIT] No matching item {item_id} for instock {iv}")
-            writer.writerow({"invoice_id": iv, "item": item_id})
+            writer.writerow({"invoice_id": iv, "item": item_id, "source_file": file_name, "row_number": row_num + 2, "notes": "no matching item in DB"})
             continue
 
-        job = str(pc) if pc is not None else None
+        job_str = str(pc) if pc is not None else None
 
-        # Accumulate item aggregate changes in memory — deduped by code
+        # Accumulate item aggregate changes in memory — only when qty and price present
         tracked = items_by_code.get(item_id, item)
-        total = Decimal(price) * Decimal(quantity)
-        tracked.min_price     = _min_price(price, tracked)
-        tracked.max_price     = _max_price(price, tracked)
-        tracked.sum_price     = (tracked.sum_price or Decimal(0)) + total
-        tracked.quantity      = (tracked.quantity  or Decimal(0)) + quantity
-        tracked.instock_number += 1
+        if price is not None:
+            tracked.min_price = _min_price(price, tracked)
+            tracked.max_price = _max_price(price, tracked)
+        if quantity is not None:
+            tracked.quantity = (tracked.quantity or Decimal(0)) + quantity
+        if quantity is not None and price is not None:
+            total = Decimal(price) * Decimal(quantity)
+            tracked.sum_price = (tracked.sum_price or Decimal(0)) + total
+            tracked.instock_number += 1
         items_by_code[item_id] = tracked
 
         pending_instock.append(Instock(
             invoice_id=str(iv), item=item, purchase_order_id=po,
             stock_date=date, supplier=supplier,
-            quantity=quantity, price=price,
-            store_type=store_type, job=job,
+            quantity=quantity or Decimal(0), price=price,
+            store_type=store_type,
         ))
+        pending_jobs.append(job_str)
 
         if len(pending_instock) >= FLUSH_EVERY:
-            flush_stock_records(pending_instock, Instock)
+            created = flush_stock_records(pending_instock, Instock)
+            _assign_jobs(created, pending_jobs)
+            pending_jobs.clear()
             flush_items(items_by_code, ITEM_FIELDS)
             progress[key] = row_num + 1
             save_progress(progress)
             print(f"[PROGRESS] {sheet_name} — row {row_num + 1}")
 
     # Final flush
-    flush_stock_records(pending_instock, Instock)
+    created = flush_stock_records(pending_instock, Instock)
+    _assign_jobs(created, pending_jobs)
+    pending_jobs.clear()
     flush_items(items_by_code, ITEM_FIELDS)
     progress.pop(key, None)
     save_progress(progress)
@@ -351,6 +368,7 @@ def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
     caches           = build_caches()
     items_by_code    = {}
     pending_outstock = []
+    pending_jobs     = []   # parallel list of job_id strings for M2M assignment
 
     for row_num, row_vals in enumerate(sheet.iter_rows(min_row=header_row + 2, values_only=True)):
         if row_num < resume_from:
@@ -360,7 +378,9 @@ def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
         stock_id = get_value(row_vals, ST_COL)
         item_id  = get_value(row_vals, ITEM_COL, is_upper=True)
 
-        if not job_val or not stock_id or not item_id:
+        if not job_val or not item_id:
+            print(f"[SKIP] Outstock row {row_num + 2} — missing job={job_val} item_id={item_id}")
+            writer.writerow({"stock_id": stock_id or "", "item": item_id or "", "source_file": file_name, "row_number": row_num + 2, "notes": "missing job or item_id"})
             continue
 
         item_id   = str(item_id)
@@ -371,48 +391,83 @@ def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
         quantity  = safe_decimal(get_value(row_vals, QTY_COL))
 
         if quantity is None:
-            print(f"[CRIT] No quantity — stock {stock_id} item {item_id}")
-            writer.writerow({"stock_id": stock_id, "item": item_id})
-            continue
+            print(f"[WARN] No quantity — stock {stock_id} item {item_id} (row saved with null qty)")
 
         item = caches["items"].get(item_id)
         if item is None:
             print(f"[CRIT] No matching item {item_id} for outstock {stock_id}")
-            writer.writerow({"stock_id": stock_id, "item": item_id})
+            writer.writerow({"stock_id": stock_id or "", "item": item_id, "source_file": file_name, "row_number": row_num + 2, "notes": "no matching item in DB"})
             continue
 
-        job = str(job_val)
+        job_str = str(job_val)
 
         customer = None
         if cust_val:
             customer, _ = get_or_create_cached(caches["customers"], Customer, "name", str(cust_val))
 
-        # Accumulate item changes — deduped by code
-        tracked = items_by_code.get(item_id, item)
-        tracked.quantity = max(Decimal(0), (tracked.quantity or Decimal(0)) - quantity)
-        tracked.outstock_number += 1
-        items_by_code[item_id] = tracked
+        # Accumulate item changes — deduped by code (only when quantity present)
+        if quantity is not None:
+            tracked = items_by_code.get(item_id, item)
+            tracked.quantity = max(Decimal(0), (tracked.quantity or Decimal(0)) - quantity)
+            tracked.outstock_number += 1
+            items_by_code[item_id] = tracked
 
         pending_outstock.append(Outstock(
-            stock_id=str(stock_id), job=job, item=item,
+            stock_id=str(stock_id) if stock_id else "", item=item,
             stock_date=date, requester=requester or "",
-            quantity=quantity, department=dept,
+            quantity=quantity or Decimal(0), department=dept,
             store_type=store_type, customer=customer,
         ))
+        pending_jobs.append(job_str)
 
         if len(pending_outstock) >= FLUSH_EVERY:
-            flush_stock_records(pending_outstock, Outstock)
+            created = flush_stock_records(pending_outstock, Outstock)
+            _assign_jobs(created, pending_jobs)
+            pending_jobs.clear()
             flush_items(items_by_code, ITEM_FIELDS)
             progress[key] = row_num + 1
             save_progress(progress)
             print(f"[PROGRESS] {sheet_name} — row {row_num + 1}")
 
     # Final flush
-    flush_stock_records(pending_outstock, Outstock)
+    created = flush_stock_records(pending_outstock, Outstock)
+    _assign_jobs(created, pending_jobs)
+    pending_jobs.clear()
     flush_items(items_by_code, ITEM_FIELDS)
     progress.pop(key, None)
     save_progress(progress)
     print(f"[INFO] Outstock sheet complete: {sheet_name}")
+
+
+# ---------------------------------------------------------------------------
+# Job M2M helper
+# ---------------------------------------------------------------------------
+
+_job_cache = {}
+
+def _get_or_create_job(job_id_str):
+    """Get or create a Job by its integer ID. Returns None if not parseable."""
+    if job_id_str is None:
+        return None
+    try:
+        job_id = int(float(job_id_str))
+    except (ValueError, TypeError):
+        return None
+    if job_id in _job_cache:
+        return _job_cache[job_id]
+    job, _ = Job.objects.get_or_create(job_id=job_id)
+    _job_cache[job_id] = job
+    return job
+
+
+def _assign_jobs(created_records, job_strings):
+    """Assign M2M job relations for a batch of created stock records."""
+    for record, job_str in zip(created_records, job_strings):
+        if job_str is None:
+            continue
+        job = _get_or_create_job(job_str)
+        if job is not None:
+            record.job.add(job)
 
 
 # ---------------------------------------------------------------------------

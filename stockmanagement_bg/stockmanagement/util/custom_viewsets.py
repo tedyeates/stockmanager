@@ -12,7 +12,6 @@ from django.utils.functional import cached_property
 class FormDataMixin(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,) 
     order_by ="-modified"
-    exclude_from_filters = ["page", "pagination"]
     
     @property
     def serializer_class(self):
@@ -37,15 +36,6 @@ class FormDataMixin(viewsets.ModelViewSet):
     def can_cut(self):
         """Field to not include in fields data"""
         return False
-    
-    @cached_property
-    def filters(self):
-        filters = self.request.GET.copy()
-        for param in self.exclude_from_filters:
-            if param in filters:
-                filters.pop(param)
-
-        return filters.dict()
     
     @cached_property
     def view_serialized_data(self):
@@ -89,11 +79,7 @@ class FormDataMixin(viewsets.ModelViewSet):
         return None
 
     def get_queryset(self):
-        query = self.model.objects.filter(**self.filters)
-        if self.order_by is not None:
-            query = query.order_by("-modified")
-            
-        return query
+        return self.model.objects.all().order_by(self.order_by)
     
     def list(self, request):
         """Gets model, field and related data based on model endpoint requested from
@@ -101,13 +87,13 @@ class FormDataMixin(viewsets.ModelViewSet):
         Returns:
             Response: HTTP Response containing model, field and related data
         """
-
-        self.data = self.paginate_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset())
+        self.data = self.paginate_queryset(queryset)
         return self.get_paginated_response(self.view_serialized_data)
     
     @action(detail=False)
     def export(self, request):
-        self.data = self.get_queryset()
+        self.data = self.filter_queryset(self.get_queryset())
         filename = f"{self.model._meta.verbose_name}.csv"
         response = HttpResponse(
             content_type="text/csv",

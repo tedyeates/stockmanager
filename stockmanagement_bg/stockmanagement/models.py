@@ -215,7 +215,7 @@ class Instock(Stock):
     number_fields = {"quantity", "price"}
 
     invoice_id = models.CharField(_("Invoice ID"), max_length=50, null=False, default="UNDEFINED")
-    job = models.ForeignKey('Job', verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
+    job = models.ManyToManyField('Job', verbose_name=_("Job"))
     price = models.DecimalField(_("Price"), max_digits=50, decimal_places=2, null=True, validators=[MinValueValidator(0)])
     purchase_order_id = models.CharField(_("PO ID"), max_length=50, null=True)
     supplier = models.CharField(_("Supplier"), max_length=50, null=True)
@@ -328,7 +328,7 @@ class Outstock(Stock):
     remaining_quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2, validators=[MinValueValidator(0)], null=True)
     objects = OutstockManager()
     
-    job = models.ForeignKey('Job', verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
+    job = models.ManyToManyField('Job', verbose_name=_("Job"))
     customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
     
 

@@ -1,10 +1,7 @@
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react()],
   resolve: {
     alias: {
       util: path.resolve(__dirname, 'src/util'),
@@ -12,12 +9,8 @@ export default defineConfig({
       styles: path.resolve(__dirname, 'src/styles'),
     },
   },
-  server: {
-    port: 3000,
-    host: '127.0.0.1',
-    open: true,
-  },
-  build: {
-    outDir: 'build',
+  test: {
+    globals: true,
+    environment: 'node',
   },
 })
