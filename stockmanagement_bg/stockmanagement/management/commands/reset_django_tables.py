@@ -54,16 +54,16 @@ class Command(BaseCommand):
             if m._meta.managed and not m._meta.proxy
         ]
         print(tables)
-        # if not tables:
-        #     self.stdout.write("No managed tables found.")
-        #     return
+        if not tables:
+            self.stdout.write("No managed tables found.")
+            return
 
-        # self.stdout.write(f"Truncating {len(tables)} Django-managed tables:")
-        # for t in tables:
-        #     self.stdout.write(f"  • {t}")
+        self.stdout.write(f"Truncating {len(tables)} Django-managed tables:")
+        for t in tables:
+            self.stdout.write(f"  • {t}")
 
-        # with connection.cursor() as cur:
-        #     cur.execute(
-        #         f"TRUNCATE {', '.join(tables)} CASCADE;"
-        #     )
-        # self.stdout.write(self.style.SUCCESS("Done — Django tables wiped."))
+        with connection.cursor() as cur:
+            cur.execute(
+                f"TRUNCATE {', '.join(tables)} CASCADE;"
+            )
+        self.stdout.write(self.style.SUCCESS("Done — Django tables wiped."))

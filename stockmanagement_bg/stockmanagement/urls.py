@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from stockmanagement.views import *
+from stockmanagement.cypress_helpers import CypressTestView, CypressInstockTestView
 from login import urls as login_urls
 
 router = DefaultRouter()
@@ -19,6 +20,6 @@ urlpatterns = [
     path('fields/item', ItemFieldView.as_view()),
     path('fields/instock', InstockFieldView.as_view()),
     path('fields/outstock', OutstockFieldView.as_view()),
-    path('suggestions/<str:model>', SelectFieldSearch.as_view()),
-    
+    path('cypress', CypressTestView.as_view(), name='cypress-test-helper'),
+    path('cypress/instock', CypressInstockTestView.as_view(), name='cypress-instock-helper'),
 ]

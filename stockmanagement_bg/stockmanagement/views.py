@@ -1,14 +1,15 @@
 from decimal import Decimal
 import math
 from django.http import JsonResponse
-from django.views import View
 from rest_framework.views import APIView
-from django.db.models import Q, Max, Min
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Max, Min
 from django.utils.translation import gettext as _
 from rest_framework.serializers import ValidationError
 
 from stockmanagement.models import Outstock, Item, Group, Instock, Brand
-from stockmanagement.models import SEARCH_RESULTS
+
 from .serializers import *
 from stockmanagement.util.custom_viewsets import FieldViewMixin, FormDataMixin
 
@@ -20,6 +21,8 @@ class GroupViewSet(FormDataMixin):
     model = Group
     queryset = Group.objects.all().order_by('-modified')
     serializer_class = GroupSerializer
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['name', 'description']
 
 
 class GroupFieldView(FieldViewMixin):
@@ -34,6 +37,16 @@ class ItemViewSet(FormDataMixin):
     serializer_class = ItemUpdateSerializer
     view_serializer_class = ItemSerializer
     export_serializer_class = ItemExportSerializer
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['name', 'code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
+    filterset_fields = {
+        'quantity': ['exact', 'gte', 'lte'],
+        'max_price': ['exact', 'gte', 'lte'],
+        'min_price': ['exact', 'gte', 'lte'],
+        'sum_price': ['exact', 'gte', 'lte'],
+        'min_quanity': ['exact', 'gte', 'lte'],
+        'max_quanity': ['exact', 'gte', 'lte'],
+    }
     
     
 
@@ -54,6 +67,13 @@ class InstockViewSet(FormDataMixin):
     model = Instock
     related_keys = ["item", "job"]
     can_cut = False
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['invoice_id', 'purchase_order_id', 'supplier', 'item__name', 'store_type', 'notes']
+    filterset_fields = {
+        'quantity': ['exact', 'gte', 'lte'],
+        'price': ['exact', 'gte', 'lte'],
+        'stock_date': ['exact', 'gte', 'lte'],
+    }
     
     def update_price(self, connected_item, connected_item_price, price):
         if(connected_item.sum_price is None):
@@ -155,6 +175,13 @@ class OutstockViewSet(FormDataMixin):
     model = Outstock
     related_keys = ["item", "job"]
     can_cut = False
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['stock_id', 'requester', 'department', 'item__name', 'customer__name', 'store_type', 'notes']
+    filterset_fields = {
+        'quantity': ['exact', 'gte', 'lte'],
+        'remaining_quantity': ['exact', 'gte', 'lte'],
+        'stock_date': ['exact', 'gte', 'lte'],
+    }
     
     def update_quantity_left(self, request, item):
         if item.quantity < request.data["quantity"] or request.data["quantity"] <= 0:
@@ -196,26 +223,5 @@ class OutstockFieldView(FieldViewMixin):
     exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'instock', 'remaining_quantity']
 
 
-class SelectFieldSearch(View):
-    def get(self, request, model):
-        search_term = request.GET.get('search_term')
-        search_results = None
 
-        if model == "item": 
-            search_data = Item.objects.filter(
-                Q(name__icontains=search_term) | Q(code__icontains=search_term)
-            )[:SEARCH_RESULTS]
-
-            search_results = RelatedItemSerializer(search_data, many=True)
-
-        if model == "group":
-            search_data = Group.objects.filter(name__icontains=search_term)[:SEARCH_RESULTS]
-            search_results = RelatedGroupSerializer(search_data, many=True)
-        
-        if model == "brand": 
-            search_data = Brand.objects.filter(name__icontains=search_term)[:SEARCH_RESULTS]
-            search_results = RelatedBrandSerializer(search_data, many=True)
-            
-
-        return JsonResponse({'results': search_results.data}, status=200)
     

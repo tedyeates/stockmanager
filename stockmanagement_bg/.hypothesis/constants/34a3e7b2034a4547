@@ -1,0 +1,4 @@
+# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\login\views.py
+# hypothesis_version: 6.141.1
+
+[401, 'request', 'token', 'user', 'username']

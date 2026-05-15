@@ -1,7 +1,6 @@
-import axios from "axios"
 import { createContext, useCallback, useContext, useEffect, useState } from "react"
 import { EXCLUDED_MODELS } from "util/constants"
-import { DataTypeArray, FieldsDataType, FilterOptionType, PageDisplayType, PageName, PaginationType, TableLoaderType } from "util/types/PageTypes"
+import { DataTypeArray, FieldsDataType, PageDisplayType, PageName, PaginationType, TableLoaderType } from "util/types/PageTypes"
 import { ProviderProps } from "util/types/types"
 import { usePagination } from "pages/customhooks/PageNumberDisplayHook"
 import { usePageNumberUpdater } from "pages/customhooks/PageUpdateHook"
@@ -13,10 +12,12 @@ type PageTypeChangerContextType = {
     currentPageName: PageName
     modalInputs: FieldsDataType
     isPageLoading: boolean
-    pageData:DataTypeArray
+    pageData: DataTypeArray
     pageDisplay: PageDisplayType
     pagination: PaginationType
-    searchFilters: Array<FilterOptionType>
+    searchTerm: string
+    errorMessage: string
+    updateSearchTerm: (term: string) => void
     tableLoader: TableLoaderType
 }
 
@@ -34,75 +35,82 @@ const PageTypeChangerContext = createContext<PageTypeChangerContextType>({
     },
     pagination: {
         currentPageNumber: 1,
-        changePageNumberTo: () => {}, 
-        changePageNumberToNextPage: () => {}, 
-        changePageNumberToPreviousPage: () => {}, 
+        changePageNumberTo: () => {},
+        changePageNumberToNextPage: () => {},
+        changePageNumberToPreviousPage: () => {},
     },
-    searchFilters: [],
+    searchTerm: "",
+    errorMessage: "",
+    updateSearchTerm: () => {},
     tableLoader: {
         changePageTo: () => {},
-        searchPageFor: () => {},
-        removeSearchFilter: () => {},
     }
 })
 
 export const usePageTypeChanger = () => useContext(PageTypeChangerContext)
 
 
-export function PageTypeChangerProvider({ children }: ProviderProps ) {
-    const {authHeader, clearToken} = useAuth()
+export function PageTypeChangerProvider({ children }: ProviderProps) {
+    const { authHeader, clearToken } = useAuth()
 
-    const {currentPageNumber, pageNumberUpdater} = usePageNumberUpdater()
-    const {pageDisplay, pageDisplayUpdater} = usePagination()
+    const { currentPageNumber, pageNumberUpdater } = usePageNumberUpdater()
+    const { pageDisplay, pageDisplayUpdater } = usePagination()
 
     const [currentPageName, setCurrentPageNameTo] = useState<PageName>("instock")
-    const [searchFilters, setSearchFiltersTo] = useState<Array<FilterOptionType>>([])
+    const [searchTerm, setSearchTerm] = useState<string>("")
     const [isPageLoading, setIsPageLoadingTo] = useState<boolean>(false)
-    
+    const [errorMessage, setErrorMessage] = useState<string>("")
+
     const [modalInputs, setModalInputsTo] = useState<FieldsDataType>([])
     const [pageData, setPageDataTo] = useState<DataTypeArray>([])
-    
 
-    const updateDataFor = useCallback(async (newPageName: PageName, newPageNumber:number, filters: Array<FilterOptionType>, active:boolean) => {
+
+    const updateDataFor = useCallback(async (newPageName: PageName, newPageNumber: number, search: string, active: boolean) => {
         let url = `${import.meta.env.VITE_BASE_URL}/api/${newPageName}/?page=${newPageNumber}`
-        // TODO: include filters
-        filters.forEach(({name, value}) => {
-            url = `${url}&${name}=${encodeURIComponent(value)}`
-        })
+        if (search.trim().length > 0) {
+            url += `&search=${encodeURIComponent(search)}`
+        }
 
         try {
             const response = await Requests.get(url, authHeader.current)
             setIsPageLoadingTo(false)
-            if(!active) return
-            
+            setErrorMessage("")
+            if (!active) return
+
             setPageDataTo(response.results)
             pageDisplayUpdater.updatePageNumbersToDisplay(
-                response.count, 
+                response.count,
                 newPageNumber
             )
             pageDisplayUpdater.updateHasPreviousPageTo(response.previous)
             pageDisplayUpdater.updateHasNextPageTo(response.next)
 
-        } catch (error) {
+        } catch (error: any) {
             setIsPageLoadingTo(false)
-            setPageDataTo([])
+            if (!active) return
+
+            const isHttpError = error?.message?.startsWith("Request Error")
+            if (isHttpError) {
+                // HTTP error (non-2xx): clear page data
+                setPageDataTo([])
+            } else {
+                // Network error (fetch rejection): preserve existing pageData
+                console.error("Network error during search:", error)
+            }
+            setErrorMessage("Search could not be completed")
         }
     }, [authHeader])
 
 
-    const requestModelInputsFor = useCallback(async (newPageName: PageName, active:boolean) => {
-        // TODO: fix fields
+    const requestModelInputsFor = useCallback(async (newPageName: PageName, active: boolean) => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/fields/${newPageName}`, {
-                headers: authHeader.current
-            })
-            if(!active) return
+            const response = await Requests.get(`${import.meta.env.VITE_BASE_URL}/fields/${newPageName}`, authHeader.current)
+            if (!active) return
 
-            setModalInputsTo(response.data)
+            setModalInputsTo(response)
             setCurrentPageNameTo(newPageName)
         } catch (error: any) {
             console.error(error.message)
-            if (error.response) console.error(error.response)
         } finally {
             if (active) setIsPageLoadingTo(false)
         }
@@ -111,17 +119,17 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
     useEffect(() => {
         let active = true
 
-        updateDataFor(currentPageName, currentPageNumber, searchFilters, active)
+        updateDataFor(currentPageName, currentPageNumber, searchTerm, active)
 
         return () => {
             active = false
         }
-    }, [updateDataFor, currentPageName, currentPageNumber, searchFilters])
+    }, [updateDataFor, currentPageName, currentPageNumber, searchTerm])
 
     useEffect(() => {
         let active = true
-        
-        if(!EXCLUDED_MODELS.has(currentPageName))
+
+        if (!EXCLUDED_MODELS.has(currentPageName))
             requestModelInputsFor(currentPageName, active)
 
         return () => {
@@ -129,54 +137,39 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
         }
     }, [requestModelInputsFor, currentPageName])
 
-    function clearSearchFilters(){
-        setSearchFiltersTo([])
-    }
-
-    function searchPage(filters: Array<FilterOptionType>){
+    function updateSearchTerm(term: string) {
         setIsPageLoadingTo(true)
+        setSearchTerm(term)
         pageNumberUpdater.changePageNumberToFirstPage()
-        
-        setSearchFiltersTo(filters)
     }
 
     const tableLoader = {
         changePageTo(newPageName: PageName) {
             setIsPageLoadingTo(true)
-            clearSearchFilters()
+            setSearchTerm("")
             pageNumberUpdater.changePageNumberToFirstPage()
             setCurrentPageNameTo(newPageName)
         },
-        searchPageFor(newFilter:FilterOptionType){
-            let updatedFilters = [...searchFilters, newFilter]
-            searchPage(updatedFilters)
-        },
-        removeSearchFilter(filterToRemove:FilterOptionType){
-            let searchFiltersWithoutRemovedFilter = searchFilters.filter(({name, value, seperator}) => 
-                filterToRemove.name !== name || filterToRemove.value !== value || filterToRemove.seperator !== seperator
-            )
-            searchPage(searchFiltersWithoutRemovedFilter)
-        }
     }
 
     const pagination = {
         currentPageNumber,
-        changePageNumberTo(newPageNumber:number){
+        changePageNumberTo(newPageNumber: number) {
             setIsPageLoadingTo(true)
             pageNumberUpdater.changePageNumberTo(newPageNumber)
         },
-        changePageNumberToNextPage(){
+        changePageNumberToNextPage() {
             this.changePageNumberTo(currentPageNumber + 1)
         },
-        changePageNumberToPreviousPage(){
+        changePageNumberToPreviousPage() {
             this.changePageNumberTo(currentPageNumber - 1)
         }
     }
 
-    
+
 
     return (
-        <PageTypeChangerContext.Provider value={{currentPageName, modalInputs, isPageLoading, pageData, pageDisplay, pagination, searchFilters, tableLoader}}>
+        <PageTypeChangerContext.Provider value={{ currentPageName, modalInputs, isPageLoading, pageData, pageDisplay, pagination, searchTerm, errorMessage, updateSearchTerm, tableLoader }}>
             {children}
         </PageTypeChangerContext.Provider>
     )
