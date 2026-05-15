@@ -8,8 +8,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 
-from auditlog.registry import auditlog
-
 from django.db.models.signals import post_save, post_delete
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -18,141 +16,9 @@ from django.contrib.contenttypes.models import ContentType
 # TODO: Remake search to work with full text
 # TODO: Focus on getting data in and calculations/search later
 # TODO: Customer/job dashboard of total price, and list of relevant outstock and instock
+    
 SEARCH_RESULTS = 20
-class SearchSuggestionManager(models.Manager):
-    number_results = SEARCH_RESULTS
-    
-    def reset_suggestion_count(self):
-        self.number_results = SEARCH_RESULTS
-    
-    def search(self, model_name, search_term):
-        if self.number_results <= 0: return []
-        self.query = self.filter(
-            model=model_name, value__icontains=search_term
-        ).annotate(
-            value_length=Length("value")
-        ).order_by("value_length").distinct("name", "value", "value_length")[:self.number_results]
-        self.number_results -= self.query.count()
-        return self.query
-
-
-class SearchSuggestion(models.Model):
-    GROUP = "Group"
-    ITEM = "Item"
-    INSTOCK = "Instock"
-    OUTSTOCK = "Outstock"
-    
-    MODEL_TYPE = (
-        (GROUP, "Group"),
-        (ITEM, "Item"),
-        (INSTOCK, "Instock"),
-        (OUTSTOCK, "Outstock"),
-    )
-    
-    EQUALS = "="
-    GREATER_THAN = ">"
-    LESS_THAN = "<"
-    DJANGO_EQUALS = "__icontains"
-    DJANGO_GREATER_THAN = "__gt"
-    DJANGO_LESS_THAN = "__lt"
-
-    SEPERATOR = (
-        (EQUALS, "Equals"),
-        (GREATER_THAN, "Greater Than"),
-        (LESS_THAN, "Less Than"),
-    )
-    
-    name = models.CharField(_("Field Name"), max_length=50)
-    display_name = models.CharField(_("Field Display Name"), max_length=50)
-    value = models.CharField(_("Value"), max_length=200)
-    model = models.CharField(_("Model"), choices=MODEL_TYPE, max_length=10)
-    seperator = models.CharField(_("Seperator"), max_length=20, default=EQUALS)
-    
-    is_number = models.BooleanField(_("Is Value of Type Number"))
-    content_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField(null=True)
-    instance = GenericForeignKey("content_type", "object_id")
-    
-    objects = SearchSuggestionManager()
-    
-    class Meta:
-        verbose_name = _("Search Suggestion")
-        verbose_name_plural = _("Search Suggestions")
-        
-    def __str__(self):
-        return f"{self.name}={self.value}"
-
-
-
-
-class Searchable(models.Model):
-    """Contains post_save and post_delete methods for updating the search suggestions"""
-    search_fields = []
-    number_fields = {}
-    
-    @classmethod
-    def  create_suggestion(cls, instance, model_name):
-        for field in cls.search_fields:
-            value = getattr(instance, field)
-            if value is None:
-                value = ""
-                
-            is_number = field in cls.number_fields
-            name = field
-            if not is_number:
-                name = f"{field}__icontains"
-            
-            SearchSuggestion.objects.get_or_create(
-                model=model_name, name=name, value=value,
-                content_type=ContentType.objects.get_for_model(instance),
-                object_id=instance.pk,
-                defaults={
-                    "display_name":field, "seperator":SearchSuggestion.EQUALS, 
-                    "instance":instance, "is_number":is_number
-                }
-            )
-        
-    
-    @classmethod
-    def  update_suggestion(cls, instance):
-        for field in cls.search_fields:
-            value = getattr(instance, field)
-            if value is None: value = ""
-                
-            suggestion = SearchSuggestion.objects.get(
-                display_name=field, 
-                content_type=ContentType.objects.get_for_model(instance).id,
-                object_id=instance.pk
-            )
-            suggestion.value = value
-            suggestion.save()
-    
-        
-    @classmethod
-    def save_suggestion(cls, sender, instance, created, **kwargs):
-        model_name = sender._meta.model_name
-        if created: return cls.create_suggestion(instance, model_name)
-        cls.update_suggestion(instance)
-            
-                
-                
-    @classmethod
-    def delete_suggestion(cls, sender, instance, **kwargs):
-        SearchSuggestion.objects.filter(object_id=instance.id).delete()
-        
-    
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        post_save.connect(cls.save_suggestion, cls)
-        post_delete.connect(cls.delete_suggestion, cls)
-    
-    class Meta:
-        abstract = True
-
-    
-    
-class Group(Searchable):
+class Group(models.Model):
     search_fields = ["name"]
     
     modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, null=True)
@@ -167,7 +33,7 @@ class Group(Searchable):
         return str(self.name)
 
 
-class Brand(Searchable):
+class Brand(models.Model):
     modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, null=True)
     name = models.CharField(_("Brand Name"), max_length=50)
     
@@ -176,7 +42,7 @@ class Brand(Searchable):
         verbose_name_plural = _("Brands")
 
 
-class Item(Searchable):
+class Item(models.Model):
     search_fields = ["name", "code", "max_price", "min_price", "sum_price"]
     number_fields = {"weight", "max_price", "min_price", "sum_price"}
 
@@ -226,8 +92,8 @@ class StoreType(models.TextChoices):
     SERVICE = "service", "Service"
     
         
-class Stock(Searchable):
-    stock_date = models.DateField(_("Date"), default=timezone.now)
+class Stock(models.Model):
+    stock_date = models.DateField(_("Date"), default=timezone.now, null=True)
     created_date = models.DateTimeField(_("Date Created"), auto_now=False, auto_now_add=True, null=True)
     modified = models.DateTimeField(_("Date Modified"), auto_now=True, auto_now_add=False, null=True)
 
@@ -240,8 +106,6 @@ class Stock(Searchable):
     class Meta:
         abstract = True
         
-    
-
 
 class StockManager(models.Manager):
     def set_model_attributes(self, stock, attributes):
@@ -351,7 +215,7 @@ class Instock(Stock):
     number_fields = {"quantity", "price"}
 
     invoice_id = models.CharField(_("Invoice ID"), max_length=50, null=False, default="UNDEFINED")
-    job = models.ForeignKey("stockmanagement.Job", verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
+    job = models.ForeignKey('Job', verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
     price = models.DecimalField(_("Price"), max_digits=50, decimal_places=2, null=True, validators=[MinValueValidator(0)])
     purchase_order_id = models.CharField(_("PO ID"), max_length=50, null=True)
     supplier = models.CharField(_("Supplier"), max_length=50, null=True)
@@ -423,30 +287,36 @@ class OutstockManager(StockManager):
         return outstock
         
         
-class Customer(Searchable):
+class Customer(models.Model):
     search_fields = ["name"]
     
     name = models.CharField(_("Customer Name"), max_length=50)
     
     class Meta:
+        db_table = "customer"
+        managed = False
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
 
     def __str__(self):
         return str(self.name)
-    
-class Job(Searchable):
-    search_fields = ["job_id"]
-    
-    job_id = models.CharField(_("Job ID"), max_length=50)
+
+
+class Job(models.Model):
+    search_fields = ["job_id", "name"]
+
+    job_id = models.IntegerField(_("Job ID"), primary_key=True)
+    name = models.CharField(_("Job Name"), max_length=200, null=True)
     customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
-    
+
     class Meta:
+        db_table = "job"
+        managed = False
         verbose_name = _("Job")
         verbose_name_plural = _("Jobs")
 
     def __str__(self):
-        return str(self.job_id)
+        return f"{self.job_id} - {self.name}"
 
 class Outstock(Stock):
     search_fields = ["stock_id", "requester", "department", "quantity"]
@@ -458,7 +328,8 @@ class Outstock(Stock):
     remaining_quantity = models.DecimalField(_("Quantity of Item Stocked"), max_digits=50, decimal_places=2, validators=[MinValueValidator(0)], null=True)
     objects = OutstockManager()
     
-    job = models.ForeignKey("stockmanagement.Job", verbose_name=_("Job"), on_delete=models.CASCADE, null=True, blank=False)
+    job = models.ForeignKey('Job', verbose_name=_("Job"), null=True, on_delete=models.SET_NULL)
+    customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
     
 
     class Meta:
@@ -467,13 +338,3 @@ class Outstock(Stock):
 
     def __str__(self):
         return f"{self.stock_id} - {self.job_id} - {self.item.name}"
-
-if settings.AUDITLOG_ON:
-    auditlog.register(Group, exclude_fields=("modified",))
-    auditlog.register(Brand, exclude_fields=("modified",))
-    auditlog.register(Item, exclude_fields=(
-        "modified", "instock_number", "outstock_number",
-        "max_price", "sum_price", "min_price",
-    ))
-    auditlog.register(Instock, exclude_fields=("created_date", "modified",))
-    auditlog.register(Outstock, exclude_fields=("created_date", "modified",))

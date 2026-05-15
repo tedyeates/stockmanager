@@ -134,7 +134,7 @@ export function Login() {
 
         try {            
             const response = await Requests.post(
-                `${process.env.REACT_APP_BASE_URL}/login/`, 
+                `${import.meta.env.VITE_BASE_URL}/login/`, 
                 data
             )
             auth.signin(response.username, response.token, () => {

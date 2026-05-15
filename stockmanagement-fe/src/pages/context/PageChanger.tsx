@@ -64,7 +64,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
     
 
     const updateDataFor = useCallback(async (newPageName: PageName, newPageNumber:number, filters: Array<FilterOptionType>, active:boolean) => {
-        let url = `${process.env.REACT_APP_BASE_URL}/api/${newPageName}/?page=${newPageNumber}`
+        let url = `${import.meta.env.VITE_BASE_URL}/api/${newPageName}/?page=${newPageNumber}`
         // TODO: include filters
         filters.forEach(({name, value}) => {
             url = `${url}&${name}=${encodeURIComponent(value)}`
@@ -93,7 +93,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps ) {
     const requestModelInputsFor = useCallback(async (newPageName: PageName, active:boolean) => {
         // TODO: fix fields
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/fields/${newPageName}`, {
+            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/fields/${newPageName}`, {
                 headers: authHeader.current
             })
             if(!active) return

@@ -7,21 +7,13 @@ from django.db.models import Q, Max, Min
 from django.utils.translation import gettext as _
 from rest_framework.serializers import ValidationError
 
-# from auditlog.models import LogEntry
-
-from stockmanagement.models import Job, Outstock, Item, Group, Instock, Brand, SearchSuggestion
+from stockmanagement.models import Outstock, Item, Group, Instock, Brand
 from stockmanagement.models import SEARCH_RESULTS
 from .serializers import *
 from stockmanagement.util.custom_viewsets import FieldViewMixin, FormDataMixin
 
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-
-class LogViewSet(FormDataMixin):
-    model = LogEntry
-    order_by = None
-    queryset = LogEntry.objects.all()
-    serializer_class = LogEntrySerializer
     
 
 class GroupViewSet(FormDataMixin):
@@ -224,141 +216,6 @@ class SelectFieldSearch(View):
             search_data = Brand.objects.filter(name__icontains=search_term)[:SEARCH_RESULTS]
             search_results = RelatedBrandSerializer(search_data, many=True)
             
-        if model == "job":
-            search_data = Job.objects.filter(job_id__icontains=search_term)[:SEARCH_RESULTS]
-            search_results = RelatedJobSerializer(search_data, many=True)
-            
 
         return JsonResponse({'results': search_results.data}, status=200)
     
-    
-
-class Search(View):
-    suggestions = []
-    search_term = ""
-    number_fields = {}
-    def serialize_suggestions(self, model_name, has_prefix=True):
-        prefix = None
-        if has_prefix:
-            prefix = model_name
-        
-        sugested_model = SearchSuggestion.objects.search(model_name, self.search_term)
-        self.suggestions.extend(SearchSuggestionSerializer(sugested_model, prefix=prefix, many=True).data)
-    
-    def get_model(self, model):
-        if model == "instock":
-            return Instock
-        if model == "outstock":
-            return Outstock
-        if model == "item":
-            return Item
-        if model == "group":
-            return Group
-
-    def number_suggestion(self, model_name):
-        model = self.get_model(model_name)
-        for field in model.number_fields:
-            self.suggestions.append(OrderedDict([
-                    ("name", f"{field}{SearchSuggestion.DJANGO_GREATER_THAN}"), 
-                    ("display_name", field),
-                    ("value", self.search_term),
-                    ('model', model_name),
-                    ('seperator', SearchSuggestion.GREATER_THAN),
-                ])
-            )
-            self.suggestions.append(OrderedDict([
-                    ("name", f"{field}{SearchSuggestion.DJANGO_LESS_THAN}"), 
-                    ("display_name", field),
-                    ("value", self.search_term),
-                    ('model', model_name),
-                    ('seperator', SearchSuggestion.LESS_THAN),
-                ])
-            )
- 
-    
-    def related_suggestions(self, model_name):
-        if model_name == "instock" or model_name == "outstock":
-            self.serialize_suggestions("item")
-        if model_name == "item": 
-            self.serialize_suggestions("brand")
-            self.serialize_suggestions("group")
-            
-            
-    def get(self, request, model):
-        SearchSuggestion.objects.reset_suggestion_count()
-        
-        self.suggestions = []
-        model_name = model
-        self.search_term = request.GET.get('search_term')
-
-        if self.search_term.isnumeric():
-            self.number_suggestion(model_name)
-            
-        self.serialize_suggestions(model_name, has_prefix=False)
-        self.related_suggestions(model_name)
-        
-        self.suggestions.sort(key=lambda suggestion:suggestion["display_name"])
-        return JsonResponse({'results': self.suggestions}, status=200)
-    
-    
-# CYPRESS TESTING
-# @method_decorator(login_required, name='dispatch')
-class Cypress(APIView):
-    
-    def delete(self, request):
-        SearchSuggestion.objects.all().delete()
-        Group.objects.all().delete()
-        Item.objects.all().delete()
-        Instock.objects.all().delete()
-        Outstock.objects.all().delete()
-
-        return JsonResponse({}, status=204)
-        
-        
-    def post(self, request):
-        test = Group.objects.create(name="test")
-        item = Item.objects.create(name="test item", description="test item description", group=test)
-        Item.objects.create(name="test item2", description="test item description")
-        
-        Instock.objects.create_instock(
-            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
-            invoice_id="Test Stock", quantity=10, price=10, item=item,
-            supplier="test"
-        )
-        
-        return JsonResponse({}, status=201)
-    
-    
-
-class CypressInstock(APIView):
-    def post(self, request):
-        item = Item.objects.create(code="GLN60150X230")
-        item2 = Item.objects.create(code="Test")
-        Instock.objects.create_instock(
-            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
-            invoice_id="Test Stock", quantity=10, price=10, item=item2,
-            supplier="test"
-        )
-        Instock.objects.create_instock(
-            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
-            invoice_id="ยกยอด64", quantity=10, price=300, item=item,
-            supplier="test"
-        )
-        Instock.objects.create_instock(
-            stock_date="1995-08-19", job_id="test", purchase_order_id="123", 
-            invoice_id="ยกยอด65", quantity=10, price=10, item=item, 
-            supplier="test"
-        )
-       
-        Outstock.objects.create_outstock(
-            stock_id="650852", stock_date="2010-11-10", requester="ted", 
-            quantity=2, item=item, job_id="123", customer="phil",
-            department="ted house"
-        )
-        Outstock.objects.create_outstock(
-            stock_id="650672", stock_date="2010-11-10", requester="ted", 
-            quantity=8, item=item, job_id="123", customer="phil",
-            department="ted house"
-        )
-        
-        return JsonResponse({}, status=201)
