@@ -7,6 +7,7 @@ import throttle from 'lodash/throttle'
 
 import { useAuth } from 'pages/context/Login'
 import { DataType } from "util/types/PageTypes"
+import "styles/forms.css"
 
 
 type AutocompleteValue = DataType & {

@@ -62,3 +62,26 @@
 - Tools used: tsc --noEmit (typecheck), vitest --run (all 45 tests pass)
 - Corrections added: none
 ---
+
+## 2026-05-16 - Task 6: Checkpoint - Ensure inline editing works end-to-end
+- Verified: all 45 tests pass (9 test files), tsc --noEmit clean
+- No errors or issues found
+- Files changed: none
+- Tools used: vitest run, tsc --noEmit
+- Corrections added: none
+---
+
+## 2026-05-16 - Task 7: Remove popup/modal system for entity editing
+- Removed `Popup` component and `PopupProvider` wrapper from App.tsx
+- Deleted `Popups.tsx`, `Forms.tsx`, `PopupContextManager.tsx` (all fully replaced by inline editing)
+- Kept `Errors.tsx` — still used by Login.tsx
+- Kept `forms.css` — `form-dropdown` class still used by ModelAutocomplete; added import to ModelAutocomplete.tsx
+- Files changed:
+  - `src/pages/App.tsx` (removed Popup/PopupProvider imports and usage)
+  - `src/pages/popup/Popups.tsx` (deleted)
+  - `src/pages/popup/Forms.tsx` (deleted)
+  - `src/pages/context/PopupContextManager.tsx` (deleted)
+  - `src/pages/table/ModelAutocomplete.tsx` (added forms.css import)
+- Tools used: tsc --noEmit (typecheck), vitest --run (all 45 tests pass)
+- Corrections added: none
+---

@@ -1,7 +1,5 @@
 import Table from "./table/Table"
-import { Popup } from "./popup/Popups"
 import Navbar from "./Navbar"
-import { PopupProvider } from "./context/PopupContextManager";
 import { InlineEditingProvider } from "./context/InlineEditingContext";
 import { TableToolbar } from "./table/TableToolbar";
 
@@ -23,28 +21,20 @@ function App(){
                 currentPageName = {pageTypeChanger.currentPageName}
                 changePageTo = {pageTypeChanger.tableLoader.changePageTo}
             />
-            <PopupProvider>
-                <Popup 
-                    isPageLoading={pageTypeChanger.isPageLoading}
-                    currentPageName = {pageTypeChanger.currentPageName}
-                    changePageTo = {pageTypeChanger.tableLoader.changePageTo}
-                    modalInputs = {pageTypeChanger.modalInputs}
-                />
-                <InlineEditingProvider>
-                    <div
-                        className="flex pt-2 px-5 flex-col text-center background-color"
-                        style={{ minWidth: "100vw" }}
-                    >
-                        <TableToolbar />
-                        <Table 
-                            pageData={pageTypeChanger.pageData} 
-                            isPageLoading={pageTypeChanger.isPageLoading} 
-                            currentPageName={pageTypeChanger.currentPageName}
-                            modalInputs={pageTypeChanger.modalInputs}
-                        />
-                    </div>
-                </InlineEditingProvider>
-            </PopupProvider>
+            <InlineEditingProvider>
+                <div
+                    className="flex pt-2 px-5 flex-col text-center background-color"
+                    style={{ minWidth: "100vw" }}
+                >
+                    <TableToolbar />
+                    <Table 
+                        pageData={pageTypeChanger.pageData} 
+                        isPageLoading={pageTypeChanger.isPageLoading} 
+                        currentPageName={pageTypeChanger.currentPageName}
+                        modalInputs={pageTypeChanger.modalInputs}
+                    />
+                </div>
+            </InlineEditingProvider>
         </div>
     )
 }

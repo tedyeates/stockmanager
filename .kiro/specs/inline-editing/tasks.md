@@ -130,17 +130,17 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Connect page refetch logic: after successful save of New_Row, trigger page data re-fetch from PageChanger context
     - _Requirements: 4.3, 4.6_
 
-- [ ] 6. Checkpoint - Ensure inline editing works end-to-end
+- [X] 6. Checkpoint - Ensure inline editing works end-to-end
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Remove popup/modal system for entity editing
-  - [ ] 7.1 Remove popup triggers from Items, Instock, Outstock pages
+- [X] 7. Remove popup/modal system for entity editing
+  - [X] 7.1 Remove popup triggers from Items, Instock, Outstock pages
     - Remove calls to `openPopup` / `PopupContextManager` for create/edit operations on these entity pages
     - Remove popup-related props passed to table components for these entities
     - Ensure no dialog/modal/overlay elements rendered during create/edit
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 7.2 Clean up unused popup code
+  - [X] 7.2 Clean up unused popup code
     - Remove or deprecate popup components (`Popups.tsx`, `Forms.tsx`) if no longer used by any page
     - Remove `PopupContextManager` if fully replaced (check if other non-entity pages still use it)
     - Remove unused CSS/styles related to popup forms
