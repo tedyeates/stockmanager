@@ -16,5 +16,27 @@
 - Property tests: fieldMapper.property.test.ts, validation.property.test.ts, keyboardNavigation.property.test.ts, moveToOutstock.property.test.ts
 - Files changed: 8 new files in src/util/ and src/util/__tests__/
 - Tools used: vitest (run tests), tsc --noEmit (typecheck)
-- Corrections added: __proto__ field name filter, jsdom exclusion for non-DOM tests
+- Corrections added: __proto__ field name filter
+---
+
+## 2026-05-16 - Task 2: Checkpoint - Ensure all utility tests pass
+- Verified: all 33 tests pass (7 test files), tsc --noEmit clean
+- Inline-editing property tests confirmed passing: fieldMapper (3), validation (2), keyboardNavigation (1), moveToOutstock (1)
+- Files changed: none
+- Tools used: vitest run, tsc --noEmit
+- Corrections added: none
+---
+
+## 2026-05-16 - Task 3: Create InlineEditingContext
+- Implemented: InlineEditingContext provider with full state management (editMode, editingRowId, editingData, validationErrors, isSaving) and actions (startEditing, startCreating, updateField, clearFieldError, save, cancel, moveToOutstock)
+- Modified Requests utility to expose `RequestError` class with status and responseData for field-level error handling on 400 responses
+- Added `refreshPage` function to PageChanger context (uses counter to trigger useEffect refetch)
+- Property test: edit-cancel round trip verifies cancel resets state and original data is never mutated
+- Files changed:
+  - `src/pages/context/InlineEditingContext.tsx` (new)
+  - `src/pages/context/__tests__/inlineEditing.property.test.ts` (new)
+  - `src/pages/context/PageChanger.tsx` (added refreshPage, refreshCounter)
+  - `src/util/requests.tsx` (added RequestError class, removed console.logs, parse response body on error)
+- Tools used: tsc --noEmit (typecheck), vitest run (tests)
+- Corrections added: none
 ---

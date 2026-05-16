@@ -60,11 +60,11 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Generate random instock DataType objects with varying field sets
     - Assert only OUTSTOCK_COPY_FIELDS keys present in result, values match source
 
-- [ ] 2. Checkpoint - Ensure all utility tests pass
+- [X] 2. Checkpoint - Ensure all utility tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 3. Create InlineEditingContext
-  - [ ] 3.1 Create InlineEditingContext provider (`src/pages/context/InlineEditingContext.tsx`)
+- [X] 3. Create InlineEditingContext
+  - [X] 3.1 Create InlineEditingContext provider (`src/pages/context/InlineEditingContext.tsx`)
     - Define `EditMode`, `ValidationErrors`, `InlineEditingContextType` types
     - Implement context provider with state: `editMode`, `editingRowId`, `editingData`, `validationErrors`, `isSaving`
     - Implement `startEditing(rowData)`: set editMode='editing', store rowData and row id
@@ -76,7 +76,7 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Implement `moveToOutstock(rowData, changePageTo)`: call extractOutstockFields, navigate to outstock page, start creating with pre-filled data
     - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 4.1, 4.2, 4.3, 4.5, 4.6, 4.7, 7.1, 7.2, 7.3_
 
-  - [ ] 3.2 Write property test for edit-cancel round trip
+  - [X] 3.2 Write property test for edit-cancel round trip
     - **Property 2: Edit-cancel round trip preserves original data**
     - **Validates: Requirements 2.1, 2.4**
     - Create `src/pages/context/__tests__/inlineEditing.property.test.ts`

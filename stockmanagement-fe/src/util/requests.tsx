@@ -5,6 +5,17 @@ enum Method {
     DELETE='DELETE'
 }
 
+export class RequestError extends Error {
+    status: number
+    responseData: any
+
+    constructor(status: number, responseData: any) {
+        super(`Request Error ${status}`)
+        this.status = status
+        this.responseData = responseData
+    }
+}
+
 export class Requests {
     static request = async (
         url: string, 
@@ -12,7 +23,6 @@ export class Requests {
         headers: HeadersInit | null=null,
         data: BodyInit | null=null
     ) => {
-        console.log(method)
         const response =  await fetch(
             url,
             {
@@ -24,8 +34,11 @@ export class Requests {
                 body: data
             }
         )
-        console.log(response.ok)
-        if (!response.ok) throw new Error(`Request Error ${response.status}: ${response.body}`)
+        if (!response.ok) {
+            let responseData: any = null
+            try { responseData = await response.json() } catch {}
+            throw new RequestError(response.status, responseData)
+        }
         return await response.json()
     }
     static get = async (url: string, headers: HeadersInit | null=null) => {

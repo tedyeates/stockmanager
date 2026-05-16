@@ -19,6 +19,7 @@ type PageTypeChangerContextType = {
     errorMessage: string
     updateSearchTerm: (term: string) => void
     tableLoader: TableLoaderType
+    refreshPage: () => void
 }
 
 
@@ -44,7 +45,8 @@ const PageTypeChangerContext = createContext<PageTypeChangerContextType>({
     updateSearchTerm: () => {},
     tableLoader: {
         changePageTo: () => {},
-    }
+    },
+    refreshPage: () => {}
 })
 
 export const usePageTypeChanger = () => useContext(PageTypeChangerContext)
@@ -60,6 +62,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps) {
     const [searchTerm, setSearchTerm] = useState<string>("")
     const [isPageLoading, setIsPageLoadingTo] = useState<boolean>(false)
     const [errorMessage, setErrorMessage] = useState<string>("")
+    const [refreshCounter, setRefreshCounter] = useState<number>(0)
 
     const [modalInputs, setModalInputsTo] = useState<FieldsDataType>([])
     const [pageData, setPageDataTo] = useState<DataTypeArray>([])
@@ -124,7 +127,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps) {
         return () => {
             active = false
         }
-    }, [updateDataFor, currentPageName, currentPageNumber, searchTerm])
+    }, [updateDataFor, currentPageName, currentPageNumber, searchTerm, refreshCounter])
 
     useEffect(() => {
         let active = true
@@ -152,6 +155,10 @@ export function PageTypeChangerProvider({ children }: ProviderProps) {
         },
     }
 
+    function refreshPage() {
+        setRefreshCounter(c => c + 1)
+    }
+
     const pagination = {
         currentPageNumber,
         changePageNumberTo(newPageNumber: number) {
@@ -169,7 +176,7 @@ export function PageTypeChangerProvider({ children }: ProviderProps) {
 
 
     return (
-        <PageTypeChangerContext.Provider value={{ currentPageName, modalInputs, isPageLoading, pageData, pageDisplay, pagination, searchTerm, errorMessage, updateSearchTerm, tableLoader }}>
+        <PageTypeChangerContext.Provider value={{ currentPageName, modalInputs, isPageLoading, pageData, pageDisplay, pagination, searchTerm, errorMessage, updateSearchTerm, tableLoader, refreshPage }}>
             {children}
         </PageTypeChangerContext.Provider>
     )
