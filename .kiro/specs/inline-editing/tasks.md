@@ -146,15 +146,15 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Remove unused CSS/styles related to popup forms
     - _Requirements: 6.3_
 
-- [ ] 8. Implement Move to Outstock flow
-  - [ ] 8.1 Implement Move to Outstock action in EditableRow
+- [X] 8. Implement Move to Outstock flow
+  - [X] 8.1 Implement Move to Outstock action in EditableRow
     - Wire "Move to Outstock" button to call `moveToOutstock` from InlineEditingContext
     - Navigate to outstock page using PageChanger context's changePageTo
     - Open New_Row on outstock page pre-filled with extracted fields from instock record
     - Ensure original instock record is not modified or deleted
     - _Requirements: 7.1, 7.2, 7.3_
 
-  - [ ] 8.2 Write unit test for Move to Outstock flow
+  - [X] 8.2 Write unit test for Move to Outstock flow
     - Test navigation occurs to outstock page
     - Test pre-filled fields match source instock record
     - Test original instock record unchanged

@@ -85,3 +85,12 @@
 - Tools used: tsc --noEmit (typecheck), vitest --run (all 45 tests pass)
 - Corrections added: none
 ---
+
+## 2026-05-16 - Task 8: Implement Move to Outstock flow
+- Verified existing implementation in InlineEditingContext.moveToOutstock (extractOutstockFields → changePageTo('outstock') → startCreating(prefill)) and EditableRow button wiring
+- Created unit test `src/pages/context/__tests__/moveToOutstock.test.ts` covering: prefill field extraction, excluded fields, sparse records, no mutation of source, navigation call, and startCreating called with correct prefill after setTimeout
+- Files changed:
+  - `src/pages/context/__tests__/moveToOutstock.test.ts` (new — 6 tests)
+- Tools used: vitest run (tests), tsc --noEmit (typecheck)
+- Corrections added: none
+---
