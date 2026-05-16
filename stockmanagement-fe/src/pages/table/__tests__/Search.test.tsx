@@ -200,13 +200,14 @@ describe('Search component', () => {
       // Input should show what user typed (local state)
       expect(input.value).toBe('new query')
 
-      // Even if parent re-renders with same searchTerm (simulating error preserving state)
+      // Parent re-renders with same searchTerm (simulating error preserving state)
+      // Since searchTerm prop didn't change, useEffect doesn't re-run, local state preserved
       rerender(
         <Search searchTerm="query" onSearchChange={onSearchChange} resultCount={10} />
       )
 
-      // searchTerm prop sync updates local state
-      expect(input.value).toBe('query')
+      // Local input state preserved — prop didn't change so no sync
+      expect(input.value).toBe('new query')
     })
 
     it('displays 0 results when resultCount is 0 (HTTP error shows empty table)', () => {

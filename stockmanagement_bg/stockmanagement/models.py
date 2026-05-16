@@ -43,12 +43,11 @@ class Brand(models.Model):
 
 
 class Item(models.Model):
-    search_fields = ["name", "code", "max_price", "min_price", "sum_price"]
+    search_fields = ["code", "max_price", "min_price", "sum_price"]
     number_fields = {"weight", "max_price", "min_price", "sum_price"}
 
     modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, null=True)
     code = models.CharField(_("Item SKU"), max_length=50, unique=True)  # Glass 20x20 is GL2020
-    name = models.CharField(_("Item Name"), max_length=50, null=True)
     description = models.CharField(_("Item Description"), max_length=1000)
     brand = models.ForeignKey(Brand, verbose_name=_("Brand"), null=True, on_delete=models.SET_NULL)
     unit = models.CharField(_("Item Unit"), max_length=50, null=True)
@@ -74,14 +73,10 @@ class Item(models.Model):
 
 
     def __str__(self):
-        return str(self.name)
+        return str(self.code)
 
 
     def save(self, *args, **kwargs):
-        if self.name is None:
-            self.name = self.code
-        
-        
         super().save(*args, **kwargs)
         
 
@@ -226,7 +221,7 @@ class Instock(Stock):
         verbose_name_plural = _("Instocks")
 
     def __str__(self):
-        return f"{self.invoice_id} - {self.job_id} - {self.item.name}"
+        return f"{self.invoice_id} - {self.job_id} - {self.item.code}"
     
 
 class OutstockManager(StockManager):
@@ -303,10 +298,9 @@ class Customer(models.Model):
 
 
 class Job(models.Model):
-    search_fields = ["job_id", "name"]
+    search_fields = ["job_id"]
 
-    job_id = models.IntegerField(_("Job ID"), primary_key=True)
-    name = models.CharField(_("Job Name"), max_length=200, null=True)
+    job_id = models.CharField(_("Job ID"), max_length=50, primary_key=True)
     customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
 
     class Meta:
@@ -316,7 +310,7 @@ class Job(models.Model):
         verbose_name_plural = _("Jobs")
 
     def __str__(self):
-        return f"{self.job_id} - {self.name}"
+        return str(self.job_id)
 
 class Outstock(Stock):
     search_fields = ["stock_id", "requester", "department", "quantity"]
@@ -337,4 +331,4 @@ class Outstock(Stock):
         verbose_name_plural = _("Outstocks")
 
     def __str__(self):
-        return f"{self.stock_id} - {self.job_id} - {self.item.name}"
+        return f"{self.stock_id} - {self.item.code}"

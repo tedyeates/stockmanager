@@ -38,7 +38,7 @@ class ItemViewSet(FormDataMixin):
     view_serializer_class = ItemSerializer
     export_serializer_class = ItemExportSerializer
     filter_backends = [SearchFilter, DjangoFilterBackend]
-    search_fields = ['name', 'code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
+    search_fields = ['code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
     filterset_fields = {
         'quantity': ['exact', 'gte', 'lte'],
         'max_price': ['exact', 'gte', 'lte'],
@@ -68,7 +68,7 @@ class InstockViewSet(FormDataMixin):
     related_keys = ["item", "job"]
     can_cut = False
     filter_backends = [SearchFilter, DjangoFilterBackend]
-    search_fields = ['invoice_id', 'purchase_order_id', 'supplier', 'item__name', 'store_type', 'notes']
+    search_fields = ['invoice_id', 'purchase_order_id', 'supplier', 'item__code', 'store_type', 'notes']
     filterset_fields = {
         'quantity': ['exact', 'gte', 'lte'],
         'price': ['exact', 'gte', 'lte'],
@@ -176,7 +176,7 @@ class OutstockViewSet(FormDataMixin):
     related_keys = ["item", "job"]
     can_cut = False
     filter_backends = [SearchFilter, DjangoFilterBackend]
-    search_fields = ['stock_id', 'requester', 'department', 'item__name', 'customer__name', 'store_type', 'notes']
+    search_fields = ['stock_id', 'requester', 'department', 'item__code', 'customer__name', 'store_type', 'notes']
     filterset_fields = {
         'quantity': ['exact', 'gte', 'lte'],
         'remaining_quantity': ['exact', 'gte', 'lte'],
@@ -191,7 +191,7 @@ class OutstockViewSet(FormDataMixin):
         item.outstock_number += 1
         item.quantity -= round(Decimal(request.data["quantity"]), 2)
         print("NEW ITEM")
-        print(item.name)
+        print(item.code)
         print(item.outstock_number)
         item.save()
     

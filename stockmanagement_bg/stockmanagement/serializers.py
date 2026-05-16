@@ -53,7 +53,7 @@ class ItemSearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item 
-        fields = ("name", "code", "brand", "term_found_column")
+        fields = ("code", "brand", "term_found_column")
         
 
 class ItemUpdateSerializer(ItemSerializer):
@@ -67,18 +67,16 @@ class ItemExportSerializer(ItemSerializer):
 
 
 class RelatedItemSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(read_only=True)
-    
     class Meta:
         model = Item 
-        fields = ('id', 'name')
+        fields = ('id', 'code')
     
 
 class StockSerializer(serializers.ModelSerializer):
     stock_date = serializers.DateField(format='%d/%m/%Y')
     size = serializers.ListField(child=serializers.DecimalField(max_digits=50, decimal_places=2), required=False)
     item = RelatedItemSerializer()
-    customer = serializers.CharField(source="job.customer.name", read_only=True, default="")
+    job = serializers.SlugRelatedField(many=True, read_only=True, slug_field='job_id')
 
     class Meta:
         model = Stock
@@ -100,12 +98,13 @@ class InstockUpdateSerializer(InstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
 
 class InstockExportSerializer(InstockSerializer):
-    item = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    item = serializers.SlugRelatedField(read_only=True, slug_field='code')
 
 class OutstockSerializer(StockSerializer):
     stock_id = serializers.CharField(max_length=50)
     requester = serializers.CharField(max_length=50)
     department = serializers.CharField(max_length=50)
+    customer = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
     class Meta(StockSerializer.Meta):
         model = Outstock
@@ -118,4 +117,4 @@ class OutstockUpdateSerializer(OutstockSerializer):
     
     
 class OutstockExportSerializer(OutstockSerializer):
-    item = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    item = serializers.SlugRelatedField(read_only=True, slug_field='code')
