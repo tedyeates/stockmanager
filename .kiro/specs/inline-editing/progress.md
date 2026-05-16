@@ -51,3 +51,14 @@
 - Tools used: tsc --noEmit (typecheck), vitest --run (all 45 tests pass across 9 files)
 - Corrections added: none
 ---
+
+## 2026-05-16 - Task 5: Integrate inline editing into Table
+- Implemented: Table renders EditableRow for creating (top of tbody) and editing (matching row id), click handler triggers startEditing with guard against multiple edits. TableToolbar uses startCreating() with disabled state. InlineEditingProvider wraps Table+Toolbar in App.tsx.
+- Files changed:
+  - `src/pages/table/Table.tsx` (replaced popup import with InlineEditingContext, added EditableRow rendering, new click handler with edit guard)
+  - `src/pages/table/TableToolbar.tsx` (replaced PopupContextManager with InlineEditingContext, disabled Create button when creating)
+  - `src/pages/App.tsx` (added InlineEditingProvider wrapping table area, passed modalInputs to Table)
+  - `src/pages/ExpandButton.tsx` (added disabled prop)
+- Tools used: tsc --noEmit (typecheck), vitest --run (all 45 tests pass)
+- Corrections added: none
+---

@@ -111,8 +111,8 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Test Escape key triggers cancel
     - _Requirements: 1.3, 2.3, 5.3, 7.1_
 
-- [ ] 5. Integrate inline editing into Table
-  - [ ] 5.1 Modify Table component (`src/pages/table/Table.tsx`)
+- [X] 5. Integrate inline editing into Table
+  - [X] 5.1 Modify Table component (`src/pages/table/Table.tsx`)
     - Wrap table with InlineEditingContext provider (or consume from parent)
     - Conditionally render New_Row (EditableRow with isNewRow=true) at top of table when editMode='creating'
     - For each data row: if row id matches editingRowId, render EditableRow; otherwise render existing display row
@@ -120,12 +120,12 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Prevent row click from triggering edit when another row is already in edit mode (Requirement 2.5)
     - _Requirements: 1.1, 2.1, 2.5, 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 5.2 Modify TableToolbar (`src/pages/table/TableToolbar.tsx`)
+  - [X] 5.2 Modify TableToolbar (`src/pages/table/TableToolbar.tsx`)
     - Replace popup open call with `startCreating()` from InlineEditingContext
     - Disable Create button when `editMode === 'creating'`
     - _Requirements: 1.1, 1.7_
 
-  - [ ] 5.3 Wire InlineEditingContext into App component
+  - [X] 5.3 Wire InlineEditingContext into App component
     - Add InlineEditingContext provider wrapping the table page components in App.tsx or appropriate parent
     - Connect page refetch logic: after successful save of New_Row, trigger page data re-fetch from PageChanger context
     - _Requirements: 4.3, 4.6_

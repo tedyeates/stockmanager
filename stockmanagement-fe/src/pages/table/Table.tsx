@@ -2,17 +2,19 @@ import { ReactElement } from "react";
 import { Decimal } from 'decimal.js'
 
 import { title } from 'util/strings'
-import { useRowData } from "pages/context/PopupContextManager";
 import { EXCLUDED_MODELS } from "util/constants";
+import { useInlineEditing } from "pages/context/InlineEditingContext";
 
 import "styles/loader.css"
 import { LoadingSpinner } from "./LoadingSpinner";
-import { DataType, DataTypeArray } from "util/types/PageTypes";
+import { EditableRow } from "./EditableRow";
+import { DataType, DataTypeArray, FieldsDataType, PageName } from "util/types/PageTypes";
 
 type TableProps = {
     pageData: DataTypeArray
     isPageLoading: boolean
-    currentPageName: string
+    currentPageName: PageName
+    modalInputs: FieldsDataType
     hasHighlightedColumns?: boolean
 }
 
@@ -26,8 +28,8 @@ function TableColumn({name}: ColumnProps){
 
 
 
-function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}:TableProps) {
-    const {prefillPopup} = useRowData()
+function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName, modalInputs}:TableProps) {
+    const { editMode, editingRowId, startEditing } = useInlineEditing()
 
     function renderHeader(): ReactElement {
         return (
@@ -101,23 +103,38 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}
 
 
     function renderBody(): ReactElement[]{
-        let onClickFunction = (pageData: DataType) => prefillPopup(pageData)
-        if(EXCLUDED_MODELS.has(currentPageName))
-            onClickFunction = (pageData) => null
-        return pageData.map((pageData: DataType, rowIndex:number) => {
+        const isEditable = !EXCLUDED_MODELS.has(currentPageName)
+        const onClickRow = (rowData: DataType) => {
+            if (!isEditable) return
+            if (editMode !== 'none') return
+            startEditing(rowData)
+        }
+
+        return pageData.map((rowData: DataType, rowIndex: number) => {
+            if (isEditable && editMode === 'editing' && rowData.id === editingRowId) {
+                return (
+                    <EditableRow
+                        key={`edit-${rowData.id}`}
+                        modalInputs={modalInputs}
+                        currentPageName={currentPageName}
+                        isNewRow={false}
+                    />
+                )
+            }
+
             let lastColIndex = 0
             return (
                 <tr 
-                    key={rowIndex} className="table-row" 
-                    onClick={() => onClickFunction(pageData)}
+                    key={rowIndex} className="table-row cursor-pointer" 
+                    onClick={() => onClickRow(rowData)}
                 >
-                    {Object.entries(pageData).filter(([key, _]) => {
+                    {Object.entries(rowData).filter(([key, _]) => {
                         return key !== "stock_type"
                     }).map(([key, value], colIndex) => {
                         lastColIndex = colIndex
                         return renderCell(rowIndex, colIndex, value, key)
                     })}
-                    {renderExtraCells(pageData, lastColIndex + 1)}
+                    {renderExtraCells(rowData, lastColIndex + 1)}
                 </tr>    
             )
         })
@@ -135,6 +152,14 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}
                         {renderHeader()}
                     </thead>
                     <tbody key='tbody' className={`table-row-group text-sm border dark-outline text-dark-color`}>
+                        {editMode === 'creating' && (
+                            <EditableRow
+                                key="new-row"
+                                modalInputs={modalInputs}
+                                currentPageName={currentPageName}
+                                isNewRow={true}
+                            />
+                        )}
                         {renderBody()}
                     </tbody>
                 </table>
