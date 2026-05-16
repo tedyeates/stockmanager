@@ -1,7 +1,6 @@
 # Corrections
 
 - ❌ Using `fc.string().filter(s => /^[a-z_]+$/.test(s))` for field names → ✅ Use `/^[a-z][a-z_]*$/` to exclude `__proto__` and other dunder names that break `hasOwnProperty` checks in property tests
-- ❌ Running `npm run test` includes Search.test.tsx which needs jsdom → ✅ Use `npx vitest --run --exclude "**/Search.test.tsx"` or run specific directories for non-DOM tests
 
 # Codebase Patterns
 
