@@ -38,7 +38,6 @@ ITEM_SEARCH_FIELDS = ['name', 'code', 'description', 'unit', 'group__name', 'bra
 def get_searchable_text(item):
     """Collect all searchable field values for an Item into a single lowercase string."""
     parts = []
-    parts.append(item.name or "")
     parts.append(item.code or "")
     parts.append(item.description or "")
     parts.append(item.unit or "")
@@ -144,7 +143,7 @@ class TestSearchResultsContainment(TestCase):
                     search_term.lower(),
                     searchable_text,
                     f"Search term '{search_term}' not found in any searchable field of "
-                    f"item '{item.name}' (id={item.id}). "
+                    f"item '{item.code}' (id={item.id}). "
                     f"Searchable text: '{searchable_text}'"
                 )
         finally:
@@ -248,7 +247,7 @@ class TestCombinedSearchAndFilterANDLogic(TestCase):
                     search_term.lower(),
                     searchable_text,
                     f"Search term '{search_term}' not found in searchable fields of "
-                    f"item '{item.name}' (id={item.id}). "
+                    f"item '{item.code}' (id={item.id}). "
                     f"Searchable text: '{searchable_text}'"
                 )
 
@@ -256,7 +255,7 @@ class TestCombinedSearchAndFilterANDLogic(TestCase):
                 self.assertGreaterEqual(
                     item.quantity,
                     Decimal(quantity_threshold),
-                    f"Item '{item.name}' (id={item.id}) has quantity={item.quantity} "
+                    f"Item '{item.code}' (id={item.id}) has quantity={item.quantity} "
                     f"which is less than filter threshold {quantity_threshold}. "
                     f"Combined AND logic violated."
                 )
@@ -353,7 +352,7 @@ class TestMultiWordANDLogic(TestCase):
                     self.assertIn(
                         word.lower(),
                         searchable_text,
-                        f"Word '{word}' not found in searchable fields of item '{item.name}' "
+                        f"Word '{word}' not found in searchable fields of item '{item.code}' "
                         f"(id={item.id}). Search query: '{search_query}'. "
                         f"Searchable text: '{searchable_text}'"
                     )

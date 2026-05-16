@@ -446,17 +446,24 @@ def load_outstock(writer, sheet, file_name, sheet_name, store_type, header_row):
 _job_cache = {}
 
 def _get_or_create_job(job_id_str):
-    """Get or create a Job by its integer ID. Returns None if not parseable."""
+    """Get or create a Job by its string ID. Returns None if empty/invalid."""
     if job_id_str is None:
         return None
-    try:
-        job_id = int(float(job_id_str))
-    except (ValueError, TypeError):
+    job_id_str = str(job_id_str).strip()
+    if not job_id_str or job_id_str == '.':
         return None
-    if job_id in _job_cache:
-        return _job_cache[job_id]
-    job, _ = Job.objects.get_or_create(job_id=job_id)
-    _job_cache[job_id] = job
+    # Strip trailing .0 from numeric strings (Excel float artifacts)
+    if '.' in job_id_str:
+        try:
+            job_id_str = str(int(float(job_id_str)))
+        except (ValueError, TypeError):
+            pass
+    if not job_id_str:
+        return None
+    if job_id_str in _job_cache:
+        return _job_cache[job_id_str]
+    job, _ = Job.objects.get_or_create(job_id=job_id_str)
+    _job_cache[job_id_str] = job
     return job
 
 

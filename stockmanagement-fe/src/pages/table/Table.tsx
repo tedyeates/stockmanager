@@ -60,8 +60,10 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName}
 
 
     function renderCell(rowIndex:number, colIndex:number, value:any, key:string = ''): ReactElement {
-        if(value !== null && typeof value === 'object') {
-            value = value.name
+        if(Array.isArray(value)) {
+            value = value.join(key === 'size' ? ' x ' : ', ')
+        } else if(value !== null && typeof value === 'object') {
+            value = value.name || value.code
         }
         
         let backgroundClass = "background-color"

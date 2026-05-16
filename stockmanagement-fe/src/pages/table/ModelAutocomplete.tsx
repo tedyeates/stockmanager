@@ -65,7 +65,7 @@ export default function ModelAutocomplete({modelType, value, onChange}: Autocomp
     return (
         <Autocomplete 
             className='form-dropdown'
-            getOptionLabel={(option:any) => option ? (option.name ?? '') : ''}
+            getOptionLabel={(option:any) => option ? (option.name ?? option.code ?? '') : ''}
             filterOptions={(x) => x}
             options={options}
             autoComplete
