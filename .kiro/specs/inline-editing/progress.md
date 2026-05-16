@@ -40,3 +40,14 @@
 - Tools used: tsc --noEmit (typecheck), vitest run (tests)
 - Corrections added: none
 ---
+
+## 2026-05-16 - Task 4: Create UI components
+- Implemented: EditableCell.tsx (renders input per field type with error tooltip), EditableRow.tsx (orchestrates cells, buttons, keyboard nav)
+- Unit tests: EditableRow.test.tsx — Save/Cancel rendered, Move to Outstock conditional, Escape triggers cancel, AutoField excluded
+- Files changed:
+  - `src/pages/table/EditableCell.tsx` (new)
+  - `src/pages/table/EditableRow.tsx` (new)
+  - `src/pages/table/__tests__/EditableRow.test.tsx` (new)
+- Tools used: tsc --noEmit (typecheck), vitest --run (all 45 tests pass across 9 files)
+- Corrections added: none
+---

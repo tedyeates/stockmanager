@@ -83,8 +83,8 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Generate random DataType objects, simulate startEditing + arbitrary field modifications + cancel
     - Assert state returns to original data after cancel
 
-- [ ] 4. Create UI components
-  - [ ] 4.1 Create EditableCell component (`src/pages/table/EditableCell.tsx`)
+- [X] 4. Create UI components
+  - [X] 4.1 Create EditableCell component (`src/pages/table/EditableCell.tsx`)
     - Render appropriate input control based on fieldType using FieldMapper
     - Text input for text, number input for numeric, date picker for date, select for choices, autocomplete for ForeignKey
     - Apply red border class when `error` prop is present
@@ -94,7 +94,7 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Handle onKeyDown for keyboard navigation
     - _Requirements: 1.2, 2.2, 3.1, 3.2, 3.3, 3.4, 3.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
-  - [ ] 4.2 Create EditableRow component (`src/pages/table/EditableRow.tsx`)
+  - [X] 4.2 Create EditableRow component (`src/pages/table/EditableRow.tsx`)
     - Accept `modalInputs`, `currentPageName`, `isNewRow` props
     - Use InlineEditingContext to get editingData, validationErrors, updateField, save, cancel
     - Render EditableCell for each editable field (from getEditableFields)
@@ -104,7 +104,7 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Implement keyboard navigation using getNavigationAction utility
     - _Requirements: 1.2, 1.3, 2.2, 2.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 7.1_
 
-  - [ ] 4.3 Write unit tests for EditableRow
+  - [X] 4.3 Write unit tests for EditableRow
     - Create `src/pages/table/__tests__/EditableRow.test.tsx`
     - Test Save/Cancel buttons rendered in edit mode
     - Test "Move to Outstock" button only shown for instock pages
