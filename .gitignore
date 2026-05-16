@@ -17,3 +17,5 @@ www/
 
 **/stockmanagement_bg/static/** 
 **/backups/
+.hypothesis/
+**/cypress.env.json

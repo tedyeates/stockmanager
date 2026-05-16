@@ -1,6 +1,9 @@
 # Corrections
 
 - ❌ Using `fc.string().filter(s => /^[a-z_]+$/.test(s))` for field names → ✅ Use `/^[a-z][a-z_]*$/` to exclude `__proto__` and other dunder names that break `hasOwnProperty` checks in property tests
+- ❌ `store_type` value `"METAL"` in test data → ✅ Use lowercase `"metal"` (StoreType.METAL = "metal")
+- ❌ Using `User.objects.create_user()` in Hypothesis TestCase setUp → ✅ Use `get_or_create` to avoid UniqueViolation across test methods (Hypothesis TestCase doesn't flush between methods like TransactionTestCase)
+- ❌ Assuming Django `ValidationError` raised in model layer returns 400 via DRF → ✅ DRF only catches `rest_framework.exceptions.ValidationError`; must catch `django.core.exceptions.ValidationError` in ViewSet and re-raise as DRF's
 
 # Codebase Patterns
 
@@ -93,4 +96,16 @@
   - `src/pages/context/__tests__/moveToOutstock.test.ts` (new — 6 tests)
 - Tools used: vitest run (tests), tsc --noEmit (typecheck)
 - Corrections added: none
+---
+
+## 2026-05-16 - Task 9: Backend validation for outstock quantity
+- What was implemented:
+  - Fixed OutstockViewSet.create() and update() to catch `django.core.exceptions.ValidationError` from OutstockManager and re-raise as DRF's `ValidationError` — previously would have returned 500 instead of 400
+  - Created property-based test (`test_inline_editing_api.py`) with Hypothesis generating random excess quantities, verifying 400 + `quantity` field in error response
+  - Added sanity tests: valid quantity returns 201, zero quantity returns 400
+- Files changed:
+  - `stockmanagement_bg/stockmanagement/views.py` (added DjangoValidationError import, try/except in create+update)
+  - `stockmanagement_bg/stockmanagement/tests/test_inline_editing_api.py` (new — 3 tests including 1 property test with 100 examples)
+- Tools used: pytest (backend tests)
+- Corrections added: store_type lowercase value, get_or_create for Hypothesis TestCase, Django vs DRF ValidationError distinction
 ---

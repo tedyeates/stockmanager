@@ -160,14 +160,14 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Test original instock record unchanged
     - _Requirements: 7.2, 7.3_
 
-- [ ] 9. Backend validation for outstock quantity
-  - [ ] 9.1 Verify/add backend validation for outstock quantity exceeding item quantity
+- [X] 9. Backend validation for outstock quantity
+  - [X] 9.1 Verify/add backend validation for outstock quantity exceeding item quantity
     - Ensure outstock serializer/view validates that quantity does not exceed available item quantity
     - Return 400 with field-level error message when quantity exceeds available stock
     - Frontend displays this as a Validation_Indicator on the quantity field
     - _Requirements: 7.4_
 
-  - [ ] 9.2 Write backend property test for outstock quantity validation
+  - [X] 9.2 Write backend property test for outstock quantity validation
     - Create test in `stockmanagement/tests/test_inline_editing_api.py`
     - Use Hypothesis to generate random quantities above item threshold
     - Assert API returns 400 and quantity field in error response

@@ -6,6 +6,7 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Max, Min
 from django.utils.translation import gettext as _
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.serializers import ValidationError
 
 from stockmanagement.models import Outstock, Item, Group, Instock, Brand
@@ -200,7 +201,10 @@ class OutstockViewSet(FormDataMixin):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         
-        outstock = Outstock.objects.create_outstock(**serializer.validated_data)
+        try:
+            outstock = Outstock.objects.create_outstock(**serializer.validated_data)
+        except DjangoValidationError as e:
+            raise ValidationError(e.message_dict)
         return JsonResponse(OutstockSerializer(outstock).data, status=201)
 
 
@@ -209,7 +213,10 @@ class OutstockViewSet(FormDataMixin):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         
-        outstock = Outstock.objects.update_outstock(pk=pk, defaults=serializer.validated_data)
+        try:
+            outstock = Outstock.objects.update_outstock(pk=pk, defaults=serializer.validated_data)
+        except DjangoValidationError as e:
+            raise ValidationError(e.message_dict)
         return JsonResponse(OutstockSerializer(outstock).data, status=201)
         
 

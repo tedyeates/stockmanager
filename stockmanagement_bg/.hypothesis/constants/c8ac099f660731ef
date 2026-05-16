@@ -1,4 +1,0 @@
-# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\stockmanagement\serializers.py
-# hypothesis_version: 6.141.1
-
-['%d/%m/%Y', '__all__', 'brand', 'code', 'created_date', 'id', 'job.customer.name', 'modified', 'name', 'remaining_quantity', 'term_found_column']

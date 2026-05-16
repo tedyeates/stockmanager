@@ -1,4 +1,0 @@
-# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\stockmanagement_bg\urls.py
-# hypothesis_version: 6.141.1
-
-['accounts/', 'accounts/login/', 'accounts/logout/', 'admin/', 'login', 'logout', 'stockmanagement', 'stockmanagement.urls']
