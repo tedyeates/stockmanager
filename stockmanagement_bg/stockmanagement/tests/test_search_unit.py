@@ -52,15 +52,15 @@ class TestSearchFieldsConfiguration:
         assert GroupViewSet.search_fields == ['name', 'description']
 
     def test_item_search_fields(self):
-        expected = ['name', 'code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
+        expected = ['code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
         assert ItemViewSet.search_fields == expected
 
     def test_instock_search_fields(self):
-        expected = ['invoice_id', 'purchase_order_id', 'supplier', 'item__name', 'store_type', 'notes']
+        expected = ['invoice_id', 'purchase_order_id', 'supplier', 'item__code', 'store_type', 'notes']
         assert InstockViewSet.search_fields == expected
 
     def test_outstock_search_fields(self):
-        expected = ['stock_id', 'requester', 'department', 'item__name', 'customer__name', 'store_type', 'notes']
+        expected = ['stock_id', 'requester', 'department', 'item__code', 'customer__name', 'store_type', 'notes']
         assert OutstockViewSet.search_fields == expected
 
 

@@ -60,11 +60,11 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Generate random instock DataType objects with varying field sets
     - Assert only OUTSTOCK_COPY_FIELDS keys present in result, values match source
 
-- [ ] 2. Checkpoint - Ensure all utility tests pass
+- [X] 2. Checkpoint - Ensure all utility tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 3. Create InlineEditingContext
-  - [ ] 3.1 Create InlineEditingContext provider (`src/pages/context/InlineEditingContext.tsx`)
+- [X] 3. Create InlineEditingContext
+  - [X] 3.1 Create InlineEditingContext provider (`src/pages/context/InlineEditingContext.tsx`)
     - Define `EditMode`, `ValidationErrors`, `InlineEditingContextType` types
     - Implement context provider with state: `editMode`, `editingRowId`, `editingData`, `validationErrors`, `isSaving`
     - Implement `startEditing(rowData)`: set editMode='editing', store rowData and row id
@@ -76,15 +76,15 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Implement `moveToOutstock(rowData, changePageTo)`: call extractOutstockFields, navigate to outstock page, start creating with pre-filled data
     - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 4.1, 4.2, 4.3, 4.5, 4.6, 4.7, 7.1, 7.2, 7.3_
 
-  - [ ] 3.2 Write property test for edit-cancel round trip
+  - [X] 3.2 Write property test for edit-cancel round trip
     - **Property 2: Edit-cancel round trip preserves original data**
     - **Validates: Requirements 2.1, 2.4**
     - Create `src/pages/context/__tests__/inlineEditing.property.test.ts`
     - Generate random DataType objects, simulate startEditing + arbitrary field modifications + cancel
     - Assert state returns to original data after cancel
 
-- [ ] 4. Create UI components
-  - [ ] 4.1 Create EditableCell component (`src/pages/table/EditableCell.tsx`)
+- [X] 4. Create UI components
+  - [X] 4.1 Create EditableCell component (`src/pages/table/EditableCell.tsx`)
     - Render appropriate input control based on fieldType using FieldMapper
     - Text input for text, number input for numeric, date picker for date, select for choices, autocomplete for ForeignKey
     - Apply red border class when `error` prop is present
@@ -94,7 +94,7 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Handle onKeyDown for keyboard navigation
     - _Requirements: 1.2, 2.2, 3.1, 3.2, 3.3, 3.4, 3.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
-  - [ ] 4.2 Create EditableRow component (`src/pages/table/EditableRow.tsx`)
+  - [X] 4.2 Create EditableRow component (`src/pages/table/EditableRow.tsx`)
     - Accept `modalInputs`, `currentPageName`, `isNewRow` props
     - Use InlineEditingContext to get editingData, validationErrors, updateField, save, cancel
     - Render EditableCell for each editable field (from getEditableFields)
@@ -104,15 +104,15 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Implement keyboard navigation using getNavigationAction utility
     - _Requirements: 1.2, 1.3, 2.2, 2.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 7.1_
 
-  - [ ] 4.3 Write unit tests for EditableRow
+  - [X] 4.3 Write unit tests for EditableRow
     - Create `src/pages/table/__tests__/EditableRow.test.tsx`
     - Test Save/Cancel buttons rendered in edit mode
     - Test "Move to Outstock" button only shown for instock pages
     - Test Escape key triggers cancel
     - _Requirements: 1.3, 2.3, 5.3, 7.1_
 
-- [ ] 5. Integrate inline editing into Table
-  - [ ] 5.1 Modify Table component (`src/pages/table/Table.tsx`)
+- [X] 5. Integrate inline editing into Table
+  - [X] 5.1 Modify Table component (`src/pages/table/Table.tsx`)
     - Wrap table with InlineEditingContext provider (or consume from parent)
     - Conditionally render New_Row (EditableRow with isNewRow=true) at top of table when editMode='creating'
     - For each data row: if row id matches editingRowId, render EditableRow; otherwise render existing display row
@@ -120,60 +120,60 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Prevent row click from triggering edit when another row is already in edit mode (Requirement 2.5)
     - _Requirements: 1.1, 2.1, 2.5, 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 5.2 Modify TableToolbar (`src/pages/table/TableToolbar.tsx`)
+  - [X] 5.2 Modify TableToolbar (`src/pages/table/TableToolbar.tsx`)
     - Replace popup open call with `startCreating()` from InlineEditingContext
     - Disable Create button when `editMode === 'creating'`
     - _Requirements: 1.1, 1.7_
 
-  - [ ] 5.3 Wire InlineEditingContext into App component
+  - [X] 5.3 Wire InlineEditingContext into App component
     - Add InlineEditingContext provider wrapping the table page components in App.tsx or appropriate parent
     - Connect page refetch logic: after successful save of New_Row, trigger page data re-fetch from PageChanger context
     - _Requirements: 4.3, 4.6_
 
-- [ ] 6. Checkpoint - Ensure inline editing works end-to-end
+- [X] 6. Checkpoint - Ensure inline editing works end-to-end
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Remove popup/modal system for entity editing
-  - [ ] 7.1 Remove popup triggers from Items, Instock, Outstock pages
+- [X] 7. Remove popup/modal system for entity editing
+  - [X] 7.1 Remove popup triggers from Items, Instock, Outstock pages
     - Remove calls to `openPopup` / `PopupContextManager` for create/edit operations on these entity pages
     - Remove popup-related props passed to table components for these entities
     - Ensure no dialog/modal/overlay elements rendered during create/edit
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 7.2 Clean up unused popup code
+  - [X] 7.2 Clean up unused popup code
     - Remove or deprecate popup components (`Popups.tsx`, `Forms.tsx`) if no longer used by any page
     - Remove `PopupContextManager` if fully replaced (check if other non-entity pages still use it)
     - Remove unused CSS/styles related to popup forms
     - _Requirements: 6.3_
 
-- [ ] 8. Implement Move to Outstock flow
-  - [ ] 8.1 Implement Move to Outstock action in EditableRow
+- [X] 8. Implement Move to Outstock flow
+  - [X] 8.1 Implement Move to Outstock action in EditableRow
     - Wire "Move to Outstock" button to call `moveToOutstock` from InlineEditingContext
     - Navigate to outstock page using PageChanger context's changePageTo
     - Open New_Row on outstock page pre-filled with extracted fields from instock record
     - Ensure original instock record is not modified or deleted
     - _Requirements: 7.1, 7.2, 7.3_
 
-  - [ ] 8.2 Write unit test for Move to Outstock flow
+  - [X] 8.2 Write unit test for Move to Outstock flow
     - Test navigation occurs to outstock page
     - Test pre-filled fields match source instock record
     - Test original instock record unchanged
     - _Requirements: 7.2, 7.3_
 
-- [ ] 9. Backend validation for outstock quantity
-  - [ ] 9.1 Verify/add backend validation for outstock quantity exceeding item quantity
+- [X] 9. Backend validation for outstock quantity
+  - [X] 9.1 Verify/add backend validation for outstock quantity exceeding item quantity
     - Ensure outstock serializer/view validates that quantity does not exceed available item quantity
     - Return 400 with field-level error message when quantity exceeds available stock
     - Frontend displays this as a Validation_Indicator on the quantity field
     - _Requirements: 7.4_
 
-  - [ ] 9.2 Write backend property test for outstock quantity validation
+  - [X] 9.2 Write backend property test for outstock quantity validation
     - Create test in `stockmanagement/tests/test_inline_editing_api.py`
     - Use Hypothesis to generate random quantities above item threshold
     - Assert API returns 400 and quantity field in error response
     - _Requirements: 7.4_
 
-- [ ] 10. Final checkpoint - Ensure all tests pass
+- [X] 10. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

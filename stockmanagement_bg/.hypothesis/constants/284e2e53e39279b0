@@ -1,4 +1,0 @@
-# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\stockmanagement\migrations\0003_alter_instock_job_alter_outstock_job.py
-# hypothesis_version: 6.141.1
-
-['Job', 'instock', 'job', 'outstock', 'stockmanagement', 'stockmanagement.job']

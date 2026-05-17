@@ -1,6 +1,6 @@
 import { FieldsDataType } from 'util/types/PageTypes'
 
-export type InputControlType = 'text' | 'number' | 'decimal' | 'date' | 'select' | 'autocomplete' | 'hidden'
+export type InputControlType = 'text' | 'number' | 'decimal' | 'date' | 'select' | 'autocomplete' | 'multiAutocomplete' | 'hidden'
 
 const FIELD_TYPE_MAP: Record<string, InputControlType> = {
   AutoField: 'hidden',
@@ -9,6 +9,9 @@ const FIELD_TYPE_MAP: Record<string, InputControlType> = {
   DateField: 'date',
   ChoiceField: 'select',
   ForeignKey: 'autocomplete',
+  ManyToManyField: 'multiAutocomplete',
+  ManyToManyRel: 'multiAutocomplete',
+  ManyToOneRel: 'hidden',
 }
 
 export function mapFieldTypeToControl(fieldType: string): InputControlType {
@@ -16,5 +19,5 @@ export function mapFieldTypeToControl(fieldType: string): InputControlType {
 }
 
 export function getEditableFields(modalInputs: FieldsDataType): FieldsDataType {
-  return modalInputs.filter(field => field.fieldType !== 'AutoField')
+  return modalInputs.filter(field => field.fieldType !== 'AutoField' && field.fieldName !== 'modified')
 }

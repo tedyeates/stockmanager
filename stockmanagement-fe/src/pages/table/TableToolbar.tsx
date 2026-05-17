@@ -1,6 +1,6 @@
 import { FaFileDownload, FaPlus } from "react-icons/fa";
 
-import { usePopupToggle } from "../context/PopupContextManager";
+import { useInlineEditing } from "../context/InlineEditingContext";
 
 import { ExpandButton } from "../ExpandButton";
 import { Pagination } from "./Pagination";
@@ -17,7 +17,7 @@ import { usePageTypeChanger } from "../context/PageChanger";
 export function TableToolbar(){
     const {authHeader} = useAuth()
     const pageTypeChanger = usePageTypeChanger()
-    const {openPopup} = usePopupToggle()
+    const { startCreating, editMode } = useInlineEditing()
 
 
     const [isExportDownloading, setIsExportDownloadingTo] = useState<boolean>(false)
@@ -58,7 +58,8 @@ export function TableToolbar(){
                         <ExpandButton
                             text={`create ${pageTypeChanger.currentPageName}`}
                             icon={<FaPlus/>}
-                            onClick={openPopup}
+                            onClick={() => startCreating()}
+                            disabled={editMode === 'creating'}
                         />
                     </div>
                 }

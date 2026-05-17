@@ -6,7 +6,26 @@ from django.contrib.auth.models import User
 
 from django.db.models import Manager
 
-from .models import Brand, Group, Item, Outstock, Stock, Instock
+from .models import Brand, Customer, Group, Item, Job, Outstock, Stock, Instock
+
+
+class FlexibleForeignKeyField(serializers.PrimaryKeyRelatedField):
+    """Accepts either a PK (int) or a slug (name string) for lookup."""
+    def __init__(self, slug_field='name', **kwargs):
+        self.slug_field = slug_field
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        # If it's an integer or numeric string, use PK lookup
+        try:
+            return self.get_queryset().get(pk=int(data))
+        except (ValueError, TypeError):
+            pass
+        # Otherwise try slug lookup
+        try:
+            return self.get_queryset().get(**{self.slug_field: data})
+        except self.get_queryset().model.DoesNotExist:
+            self.fail('does_not_exist', pk_value=data)
 
 
 class RelatedUserSerializer(serializers.ModelSerializer):
@@ -73,7 +92,7 @@ class RelatedItemSerializer(serializers.ModelSerializer):
     
 
 class StockSerializer(serializers.ModelSerializer):
-    stock_date = serializers.DateField(format='%d/%m/%Y')
+    stock_date = serializers.DateField(format='%d/%m/%Y', input_formats=['%d/%m/%Y', '%Y-%m-%d'])
     size = serializers.ListField(child=serializers.DecimalField(max_digits=50, decimal_places=2), required=False)
     item = RelatedItemSerializer()
     job = serializers.SlugRelatedField(many=True, read_only=True, slug_field='job_id')
@@ -96,6 +115,7 @@ class InstockSerializer(StockSerializer):
 
 class InstockUpdateSerializer(InstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
+    job = serializers.PrimaryKeyRelatedField(many=True, queryset=Job.objects.all(), required=False)
 
 class InstockExportSerializer(InstockSerializer):
     item = serializers.SlugRelatedField(read_only=True, slug_field='code')
@@ -111,6 +131,8 @@ class OutstockSerializer(StockSerializer):
 
 class OutstockUpdateSerializer(OutstockSerializer):
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
+    job = serializers.PrimaryKeyRelatedField(many=True, queryset=Job.objects.all(), required=False)
+    customer = FlexibleForeignKeyField(slug_field='name', queryset=Customer.objects.all(), required=False, allow_null=True)
     
     class Meta(OutstockSerializer.Meta):
         exclude=('remaining_quantity',)
@@ -118,3 +140,15 @@ class OutstockUpdateSerializer(OutstockSerializer):
     
 class OutstockExportSerializer(OutstockSerializer):
     item = serializers.SlugRelatedField(read_only=True, slug_field='code')
+
+
+class JobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = ('job_id', 'customer')
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ('id', 'name')

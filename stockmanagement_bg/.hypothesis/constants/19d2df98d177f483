@@ -1,4 +1,0 @@
-# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\stockmanagement_bg\settings.py
-# hypothesis_version: 6.141.1
-
-['*', '.env', '/', '/static/', 'ALLOWED_HOSTS', 'APP_DIRS', 'Asia/Bangkok', 'BACKEND', 'DEBUG', 'DIRS', 'NAME', 'OPTIONS', 'PAGE_SIZE', 'SECRET_KEY', 'bootstrap4', 'context_processors', 'corsheaders', 'crispy_forms', 'default', 'django.contrib.admin', 'django.contrib.auth', 'django_extensions', 'django_filters', 'en-us', 'login', 'rest_framework', 'static', 'stockmanagement', 'stockmanagement_bg', 'templates']

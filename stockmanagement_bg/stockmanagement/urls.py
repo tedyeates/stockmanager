@@ -11,6 +11,9 @@ router.register(r'group', GroupViewSet)
 router.register(r'item', ItemViewSet)
 router.register(r'instock', InstockViewSet)
 router.register(r'outstock', OutstockViewSet)
+router.register(r'job', JobViewSet)
+router.register(r'brand', BrandViewSet)
+router.register(r'customer', CustomerViewSet)
 
 
 urlpatterns = [

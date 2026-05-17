@@ -30,6 +30,16 @@ if (-not (Test-Path $SpecsDir -PathType Container)) {
     exit 1
 }
 
+# ── Detect spec type ──
+$BugfixFile = Join-Path $SpecsDir "bugfix.md"
+$RequirementsFile = Join-Path $SpecsDir "requirements.md"
+
+if (Test-Path $BugfixFile) {
+    $SpecType = "bugfix"
+} else {
+    $SpecType = "feature"
+}
+
 # ── Initialize progress log ──
 $ProgressFile = Join-Path $SpecsDir "progress.md"
 if (-not (Test-Path $ProgressFile)) {
@@ -50,6 +60,7 @@ Write-Host ""
 Write-Host "══════════════════════════════════════" -ForegroundColor Magenta
 Write-Host "  🚀 Starting Ralph" -ForegroundColor White
 Write-Host "  spec:       $SpecsName" -ForegroundColor Cyan
+Write-Host "  type:       $SpecType" -ForegroundColor Cyan
 Write-Host "  iterations: $MaxIterations" -ForegroundColor Cyan
 Write-Host "══════════════════════════════════════" -ForegroundColor Magenta
 Write-Host ""

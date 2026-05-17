@@ -11,14 +11,30 @@
     display: inline-block;
 }
 
+.t-button.t-expand {
+    @apply px-2 py-2 rounded-lg shadow-sm border-0;
+    background-color: var(--expand-btn-bg, #f3f4f6);
+    color: #1d4ed8;
+    transition: all 0.3s ease-in-out;
+}
+
+.t-button.t-expand:hover {
+    @apply shadow-md border-0;
+    background-color: var(--expand-btn-bg-hover, #e5e7eb);
+    color: #1d4ed8;
+}
+
 .t-button.t-expand .t-button-text {
-    display: none;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    transition: max-width 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out;
 }
 
 .t-button.t-expand:hover .t-button-text {
-    display: block;
-}
-
-.t-button.t-expand:hover svg, .t-button.t-expand:hover div {
-    display: none;
+    max-width: 200px;
+    opacity: 1;
+    margin-left: 0.5rem;
 }

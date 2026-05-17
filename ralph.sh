@@ -49,14 +49,22 @@ if [ ! -f "$SPECS_DIR/progress.md" ]; then
   echo -e "${DIM}📝 Created progress.md${NC}"
 fi
 
+# Detect spec type (bugfix vs feature)
+if [ -f "$SPECS_DIR/bugfix.md" ]; then
+  SPEC_TYPE="bugfix"
+else
+  SPEC_TYPE="feature"
+fi
+
 # Load the prompt template and substitute the specs name placeholder
 PROMPT=$(sed "s/SPECS_NAME/$SPECS_NAME/g" \
-  "$SCRIPT_DIR/ralph-loop-kiro-specs-prompt.md")
+  "$SCRIPT_DIR/ralph.md")
 
 echo ""
 echo -e "${MAGENTA}══════════════════════════════════════${NC}"
 echo -e "  🚀 ${BOLD}Starting Ralph${NC}"
 echo -e "  ${DIM}spec:${NC}       ${CYAN}$SPECS_NAME${NC}"
+echo -e "  ${DIM}type:${NC}       ${CYAN}$SPEC_TYPE${NC}"
 echo -e "  ${DIM}iterations:${NC} ${CYAN}$MAX_ITERATIONS${NC}"
 echo -e "${MAGENTA}══════════════════════════════════════${NC}"
 echo ""

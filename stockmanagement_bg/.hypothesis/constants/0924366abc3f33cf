@@ -1,4 +1,0 @@
-# file: D:\Projects\PCElemacStockManager\stockmanager\stockmanagement_bg\conftest.py
-# hypothesis_version: 6.141.1
-
-['default', 'session', 'using']
