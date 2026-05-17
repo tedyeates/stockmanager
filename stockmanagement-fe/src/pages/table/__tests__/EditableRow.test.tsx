@@ -45,6 +45,8 @@ const mockModalInputs: FieldsDataType = [
     { fieldName: 'stock_date', fieldType: 'DateField', fieldChoices: [] },
 ]
 
+const mockDataColumns = ['id', 'item', 'quantity', 'stock_date']
+
 describe('EditableRow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -54,7 +56,7 @@ describe('EditableRow', () => {
         it('renders Save button', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             expect(screen.getByText('Save')).toBeDefined()
@@ -63,7 +65,7 @@ describe('EditableRow', () => {
         it('renders Cancel button', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             expect(screen.getByText('Cancel')).toBeDefined()
@@ -72,7 +74,7 @@ describe('EditableRow', () => {
         it('Save button calls save with correct args', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             fireEvent.click(screen.getByText('Save'))
@@ -82,7 +84,7 @@ describe('EditableRow', () => {
         it('Cancel button calls cancel', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             fireEvent.click(screen.getByText('Cancel'))
@@ -94,7 +96,7 @@ describe('EditableRow', () => {
         it('shows Move to Outstock button for instock pages when not new row', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             expect(screen.getByText('Move to Outstock')).toBeDefined()
@@ -103,7 +105,7 @@ describe('EditableRow', () => {
         it('does NOT show Move to Outstock button for non-instock pages', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="item" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="item" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             expect(screen.queryByText('Move to Outstock')).toBeNull()
@@ -112,7 +114,7 @@ describe('EditableRow', () => {
         it('does NOT show Move to Outstock button for new rows', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={true} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={true} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             expect(screen.queryByText('Move to Outstock')).toBeNull()
@@ -121,7 +123,7 @@ describe('EditableRow', () => {
         it('Move to Outstock button calls moveToOutstock', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             fireEvent.click(screen.getByText('Move to Outstock'))
@@ -133,7 +135,7 @@ describe('EditableRow', () => {
         it('pressing Escape on an input calls cancel', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             const quantityInput = screen.getByDisplayValue('5')
@@ -146,7 +148,7 @@ describe('EditableRow', () => {
         it('does not render an input for AutoField (id)', () => {
             render(
                 <table><tbody>
-                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} />
+                    <EditableRow modalInputs={mockModalInputs} currentPageName="instock" isNewRow={false} dataColumns={mockDataColumns} />
                 </tbody></table>
             )
             // id field should not be rendered as an input

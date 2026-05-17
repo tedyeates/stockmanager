@@ -5,6 +5,7 @@ export type FieldsDataTypeRow = {
     fieldName: string 
     fieldType: string
     fieldChoices: string[]
+    required?: boolean
 }
 export type FieldsDataType = FieldsDataTypeRow[]
 

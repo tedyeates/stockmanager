@@ -2,6 +2,7 @@ import { forwardRef, useState } from "react"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import ModelAutocomplete from "./ModelAutocomplete"
+import MultiModelAutocomplete from "./MultiModelAutocomplete"
 import { mapFieldTypeToControl } from "util/fieldMapper"
 import { title } from "util/strings"
 
@@ -53,9 +54,24 @@ export const EditableCell = forwardRef<HTMLTableCellElement, EditableCellProps>(
                     )
                 case 'date': {
                     let selected: Date | null = null
-                    if (value) {
-                        const [year, month, day] = value.split('-')
-                        selected = new Date(Number(year), Number(month) - 1, Number(day))
+                    if (value && typeof value === 'string') {
+                        let year: number, month: number, day: number
+                        if (value.includes('/')) {
+                            // DD/MM/YYYY format from API
+                            const parts = value.split('/')
+                            day = Number(parts[0])
+                            month = Number(parts[1])
+                            year = Number(parts[2])
+                        } else {
+                            // YYYY-MM-DD format (internal)
+                            const parts = value.split('-')
+                            year = Number(parts[0])
+                            month = Number(parts[1])
+                            day = Number(parts[2])
+                        }
+                        if (!isNaN(year) && !isNaN(month) && !isNaN(day) && year > 0) {
+                            selected = new Date(year, month - 1, day)
+                        }
                     }
                     return (
                         <DatePicker
@@ -100,10 +116,20 @@ export const EditableCell = forwardRef<HTMLTableCellElement, EditableCellProps>(
                     )
                 case 'autocomplete':
                     return (
-                        <div onKeyDown={onKeyDown}>
+                        <div onKeyDown={onKeyDown} className={error ? "rounded ring-2 ring-red-500" : ""}>
                             <ModelAutocomplete
                                 modelType={fieldName}
                                 value={value ?? null}
+                                onChange={(_fieldName, _fieldType, newValue) => onChange(fieldName, newValue)}
+                            />
+                        </div>
+                    )
+                case 'multiAutocomplete':
+                    return (
+                        <div onKeyDown={onKeyDown} className={error ? "rounded ring-2 ring-red-500" : ""}>
+                            <MultiModelAutocomplete
+                                modelType={fieldName}
+                                value={value ?? []}
                                 onChange={(_fieldName, _fieldType, newValue) => onChange(fieldName, newValue)}
                             />
                         </div>

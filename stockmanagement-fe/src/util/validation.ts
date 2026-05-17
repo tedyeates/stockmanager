@@ -13,6 +13,12 @@ export function validateRow(rowData: DataType, modalInputs: FieldsDataType): Val
   for (const field of modalInputs) {
     if (field.fieldType === 'AutoField') continue
 
+    // M2M fields are optional — empty array is valid
+    if (field.fieldType === 'ManyToManyField' || field.fieldType === 'ManyToManyRel') continue
+
+    // Skip validation for fields explicitly marked as not required
+    if (field.required === false) continue
+
     const value = rowData[field.fieldName]
     const isEmpty = value === undefined || value === null || value === ''
 

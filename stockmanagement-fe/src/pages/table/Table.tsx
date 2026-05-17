@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+import { ReactElement, useEffect } from "react";
 import { Decimal } from 'decimal.js'
 
 import { title } from 'util/strings'
@@ -29,7 +29,11 @@ function TableColumn({name}: ColumnProps){
 
 
 function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName, modalInputs}:TableProps) {
-    const { editMode, editingRowId, startEditing } = useInlineEditing()
+    const { editMode, editingRowId, startEditing, cancel } = useInlineEditing()
+
+    useEffect(()=> {
+        cancel()
+    }, [currentPageName])
 
     function renderHeader(): ReactElement {
         return (
@@ -104,6 +108,9 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName,
 
     function renderBody(): ReactElement[]{
         const isEditable = !EXCLUDED_MODELS.has(currentPageName)
+        const dataColumns = pageData.length > 0
+            ? Object.keys(pageData[0]).filter(k => k !== 'stock_type')
+            : []
         const onClickRow = (rowData: DataType) => {
             if (!isEditable) return
             if (editMode !== 'none') return
@@ -118,6 +125,7 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName,
                         modalInputs={modalInputs}
                         currentPageName={currentPageName}
                         isNewRow={false}
+                        dataColumns={dataColumns}
                     />
                 )
             }
@@ -158,6 +166,7 @@ function Table({hasHighlightedColumns, pageData, isPageLoading, currentPageName,
                                 modalInputs={modalInputs}
                                 currentPageName={currentPageName}
                                 isNewRow={true}
+                                dataColumns={pageData.length > 0 ? Object.keys(pageData[0]).filter(k => k !== 'stock_type') : []}
                             />
                         )}
                         {renderBody()}

@@ -173,7 +173,7 @@ Replace modal/popup-based creation and editing with inline Excel-style editing d
     - Assert API returns 400 and quantity field in error response
     - _Requirements: 7.4_
 
-- [ ] 10. Final checkpoint - Ensure all tests pass
+- [X] 10. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

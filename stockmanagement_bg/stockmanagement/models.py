@@ -11,11 +11,6 @@ from django.utils import timezone
 from django.db.models.signals import post_save, post_delete
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-
-# TODO: Make UI like excel sheets and fix import to make sure it still works
-# TODO: Remake search to work with full text
-# TODO: Focus on getting data in and calculations/search later
-# TODO: Customer/job dashboard of total price, and list of relevant outstock and instock
     
 SEARCH_RESULTS = 20
 class Group(models.Model):
@@ -58,7 +53,7 @@ class Item(models.Model):
     min_price = models.DecimalField(_("Min Price"), max_digits=50, decimal_places=2, null=True)
     quantity = models.DecimalField(_("Quantity of Items Left Instock"), default=0, max_digits=50, decimal_places=2)
     group = models.ForeignKey(Group, verbose_name=_("Group"), null=True, on_delete=models.SET_NULL)
-    notes = models.CharField(_("Notes"), max_length=1000, null=True)
+    notes = models.CharField(_("Notes"), max_length=1000, null=True, blank=True)
     
     min_quanity = models.DecimalField(_("Minimum Quantity"), null=True, max_digits=50, decimal_places=2) # Alert when quantity below
     max_quanity = models.DecimalField(_("Maximum Quantity"), null=True, max_digits=50, decimal_places=2) # Alert when quantity greater
@@ -141,7 +136,9 @@ class StockManager(models.Manager):
     
     def update(self, request, pk=None):
         instock = Instock.objects.get(pk=pk)
-        are_items_equal = instock.item.id == request.data["item"]["id"]
+        item_data = request.data.get("item")
+        incoming_item_id = item_data["id"] if isinstance(item_data, dict) else item_data
+        are_items_equal = instock.item.id == incoming_item_id
         
         updated_instock = super().update(request, pk)
         
@@ -229,14 +226,17 @@ class OutstockManager(StockManager):
         item.outstock_number += increment
 
     def validate_quantity(self, quantity):
-        if self.current_item.quantity < quantity or quantity <= 0:
-            raise ValidationError({"quantity":[_("Not enough items instock. Only %(quanitity)s items remain") % {'quanitity': quantity}]})
+        if quantity <= 0:
+            raise ValidationError({"quantity":[_("Quantity must be greater than 0")]})
+        if self.current_item.quantity < quantity:
+            raise ValidationError({"quantity":[_("Not enough items instock. Only %(quanitity)s items remain") % {'quanitity': self.current_item.quantity}]})
     
     @transaction.atomic
     def create_outstock(self, **kwargs):
         self.current_item = kwargs.get("item")
         quantity = Decimal(kwargs.get("quantity"))
         
+        jobs = kwargs.pop("job", [])
         
         self.validate_quantity(quantity)
         self.update_outstock_number(self.current_item)
@@ -245,6 +245,8 @@ class OutstockManager(StockManager):
         kwargs["remaining_quantity"] = remaining_quantity
         
         outstock = Outstock.objects.create(**kwargs)
+        if jobs:
+            outstock.job.set(jobs)
         
         self.current_item.save()
         return outstock
@@ -258,10 +260,12 @@ class OutstockManager(StockManager):
         old_quantity = outstock.quantity
         old_item = outstock.item
         
+        jobs = defaults.pop("job", None)
+        
         self.set_model_attributes(outstock, defaults)
         
         self.current_item = defaults.pop("item", outstock.item)
-        quantity = kwargs.pop("quantity", outstock.quantity)
+        quantity = Decimal(kwargs.pop("quantity", outstock.quantity))
 
         # Reset item
         self.update_quantity(old_item, old_quantity)
@@ -279,6 +283,8 @@ class OutstockManager(StockManager):
         
         self.current_item.save()
         outstock.save()
+        if jobs is not None:
+            outstock.job.set(jobs)
         return outstock
         
         
@@ -323,7 +329,7 @@ class Outstock(Stock):
     objects = OutstockManager()
     
     job = models.ManyToManyField('Job', verbose_name=_("Job"))
-    customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, on_delete=models.SET_NULL)
+    customer = models.ForeignKey(Customer, verbose_name=_("Customer"), null=True, blank=True, on_delete=models.SET_NULL)
     
 
     class Meta:

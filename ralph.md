@@ -17,15 +17,19 @@ Read the following files to understand the project. Skip any that don't exist.
 1. `.kiro/steering/product.md` — what the product is
 2. `.kiro/steering/structure.md` — project structure conventions
 3. `.kiro/steering/tech.md` — tech stack and tooling
-4. `.kiro/specs/SPECS_NAME/requirements.md` — requirements and exit criteria
+4. **Requirements file** (check which exists — use the first one found):
+   - `.kiro/specs/SPECS_NAME/requirements.md` — feature requirements and exit criteria
+   - `.kiro/specs/SPECS_NAME/bugfix.md` — bugfix description and exit criteria
 5. `.kiro/specs/SPECS_NAME/design.md` — architecture and design decisions
 6. `.kiro/specs/SPECS_NAME/tasks.md` — the task list to implement
 7. `.kiro/specs/SPECS_NAME/progress.md` — **read the top sections (Corrections and Codebase Patterns) FIRST and internalize them before doing anything else**, then review past progress entries
 
+**Spec type detection:** If `bugfix.md` exists (and `requirements.md` does not), this is a bugfix spec. If `requirements.md` exists, this is a feature spec. All subsequent references to "requirements" or "exit criteria" in this document refer to whichever file was found above.
+
 ## Phase 2: Pick ONE Task
 
 1. Find the lowest-numbered **top-level** task in `tasks.md` that is NOT marked with `[X]`. A top-level task is one at the root indentation level (e.g., `- [ ] 1.`, `- [ ] 2.`). Subtasks nested under a top-level task (e.g., `1.1`, `1.2`) are NOT independent tasks — they are part of their parent and will be implemented together with it.
-2. Read the requirement(s) and exit criteria referenced by that task in `requirements.md`
+2. Read the requirement(s) and exit criteria referenced by that task in the requirements file (`requirements.md` or `bugfix.md`)
 3. Read the relevant design details in `design.md`
 4. Do NOT pick more than one top-level task. You implement exactly one top-level task (including all of its subtasks) per invocation. You must NOT mark any other top-level task as complete — only the one you pick here.
 
@@ -52,7 +56,7 @@ Before writing any code:
 
 Before marking the task complete:
 
-1. Re-read the exit criteria from `requirements.md` for this task and confirm each one is satisfied.
+1. Re-read the exit criteria from the requirements file (`requirements.md` or `bugfix.md`) for this task and confirm each one is satisfied.
 2. Re-read the relevant design details from `design.md` and confirm the implementation conforms to the specified architecture, patterns, and constraints.
 3. If any exit criteria or design constraints are not met, go back and address them.
 

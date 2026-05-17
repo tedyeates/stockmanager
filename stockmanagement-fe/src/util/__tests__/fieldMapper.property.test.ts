@@ -39,13 +39,13 @@ describe('Feature: inline-editing, Property 1: Field schema to editable controls
     )
   })
 
-  it('getEditableFields preserves all non-AutoField entries', () => {
+  it('getEditableFields preserves all non-excluded entries', () => {
     fc.assert(
       fc.property(
         fc.array(fieldRowArb, { minLength: 0, maxLength: 20 }),
         (fields) => {
           const result = getEditableFields(fields)
-          const expected = fields.filter(f => f.fieldType !== 'AutoField')
+          const expected = fields.filter(f => f.fieldType !== 'AutoField' && f.fieldName !== 'modified')
           expect(result).toEqual(expected)
         }
       ),

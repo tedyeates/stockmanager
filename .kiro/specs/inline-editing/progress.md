@@ -109,3 +109,12 @@
 - Tools used: pytest (backend tests)
 - Corrections added: store_type lowercase value, get_or_create for Hypothesis TestCase, Django vs DRF ValidationError distinction
 ---
+
+## 2026-05-16 - Task 10: Final checkpoint - Ensure all tests pass
+- Verified: Frontend 51 tests pass (10 test files), tsc --noEmit clean
+- Verified: Backend inline-editing tests 3/3 pass
+- Pre-existing failures: 9 tests in `test_search_properties.py` and `test_search_unit.py` fail due to stale references to removed `Item.name` field and outdated `search_fields` expectations — these are from a prior feature (search) and unrelated to inline editing
+- Files changed: none
+- Tools used: vitest run, tsc --noEmit, pytest
+- Corrections added: none
+---

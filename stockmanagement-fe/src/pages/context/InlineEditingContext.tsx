@@ -101,7 +101,33 @@ export function InlineEditingProvider({ children }: ProviderProps) {
 
         setIsSaving(true)
         const baseUrl = `${import.meta.env.VITE_BASE_URL}/api/${pageName}/`
-        const { id, ...payload } = editingData
+        const { id, ...rawPayload } = editingData
+
+        // Transform M2M fields: array of objects → array of IDs for the backend
+        const payload = { ...rawPayload }
+        for (const field of modalInputs) {
+            if (field.fieldType === 'ManyToManyField' || field.fieldType === 'ManyToManyRel') {
+                const val = payload[field.fieldName]
+                if (Array.isArray(val)) {
+                    payload[field.fieldName] = val.map((v: any) => {
+                        if (typeof v === 'object' && v !== null) return v.id ?? v.job_id ?? v
+                        return v
+                    })
+                } else {
+                    payload[field.fieldName] = []
+                }
+            }
+            // Transform FK fields: object → ID for the backend
+            // If value is already a primitive (string/number from API), leave as-is
+            // If value is an object (from autocomplete selection), extract id
+            if (field.fieldType === 'ForeignKey') {
+                const val = payload[field.fieldName]
+                if (typeof val === 'object' && val !== null) {
+                    payload[field.fieldName] = val.id ?? val.code ?? val
+                }
+            }
+        }
+
         const body = JSON.stringify(payload)
 
         try {

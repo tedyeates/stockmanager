@@ -32,7 +32,7 @@ multi_word_strategy = st.lists(
 ).map(lambda words: " ".join(words))
 
 
-ITEM_SEARCH_FIELDS = ['name', 'code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
+ITEM_SEARCH_FIELDS = ['code', 'description', 'unit', 'group__name', 'brand__name', 'notes']
 
 
 def get_searchable_text(item):
@@ -74,16 +74,15 @@ class TestSearchResultsContainment(TestCase):
 
         # Pre-populate some items with varied data
         self.items = []
-        for i, (name, code, desc, unit, notes) in enumerate([
-            ("Copper Wire", "CW001", "Electrical copper wire", "meter", "High conductivity"),
-            ("Steel Bolt", "SB002", "Galvanized steel bolt", "pcs", "Grade 8"),
-            ("Glass Panel", "GP003", "Tempered glass panel", "sheet", "Safety rated"),
-            ("Rubber Seal", "RS004", "Industrial rubber seal", "pcs", "Heat resistant"),
-            ("Aluminum Pipe", "AP005", "Extruded aluminum pipe", "meter", "6061 alloy"),
+        for i, (code, desc, unit, notes) in enumerate([
+            ("CW001", "Electrical copper wire", "meter", "High conductivity"),
+            ("SB002", "Galvanized steel bolt", "pcs", "Grade 8"),
+            ("GP003", "Tempered glass panel", "sheet", "Safety rated"),
+            ("RS004", "Industrial rubber seal", "pcs", "Heat resistant"),
+            ("AP005", "Extruded aluminum pipe", "meter", "6061 alloy"),
         ]):
             item = Item.objects.create(
                 code=code,
-                name=name,
                 description=desc,
                 unit=unit,
                 group=self.group,
@@ -114,8 +113,7 @@ class TestSearchResultsContainment(TestCase):
         # Ensure at least one item contains the search term so we get results
         item_with_term = Item.objects.create(
             code=f"PROP1-{search_term[:4].upper()}-{Item.objects.count()}",
-            name=f"Item {search_term}",
-            description="Property test item",
+            description=f"Item {search_term}",
             unit="pcs",
             group=self.group,
             brand=self.brand,
@@ -193,8 +191,7 @@ class TestCombinedSearchAndFilterANDLogic(TestCase):
         # Create item matching BOTH search term AND quantity filter
         item_both = Item.objects.create(
             code=f"BOTH-{search_term[:3].upper()}-{Item.objects.count()}",
-            name=f"Item {search_term}",
-            description="Matches both constraints",
+            description=f"Item {search_term}",
             unit="pcs",
             group=self.group,
             brand=self.brand,
@@ -204,8 +201,7 @@ class TestCombinedSearchAndFilterANDLogic(TestCase):
         # Create item matching search term but NOT quantity filter
         item_search_only = Item.objects.create(
             code=f"SRCH-{search_term[:3].upper()}-{Item.objects.count()}",
-            name=f"Item {search_term}",
-            description="Matches search only",
+            description=f"Item {search_term}",
             unit="kg",
             group=self.group,
             brand=self.brand,
@@ -215,8 +211,7 @@ class TestCombinedSearchAndFilterANDLogic(TestCase):
         # Create item matching quantity filter but NOT search term
         item_filter_only = Item.objects.create(
             code=f"FILT-ZZQQ-{Item.objects.count()}",
-            name="Unrelated ZZQQ item",
-            description="No search match",
+            description="No search match ZZQQ",
             unit="m",
             group=self.group,
             brand=self.brand,
@@ -304,10 +299,9 @@ class TestMultiWordANDLogic(TestCase):
         words = search_query.split()
 
         # Create items that contain all words (spread across fields)
-        # Put first word in name, second in description, third (if exists) in notes
+        # Put first word in code, second in description, third (if exists) in notes
         item_with_all = Item.objects.create(
-            code=f"ALL-{words[0][:3].upper()}-{Item.objects.count()}",
-            name=f"Item {words[0]}",
+            code=f"ALL-{words[0][:3].upper()}-{words[0]}-{Item.objects.count()}",
             description=f"Desc {words[1]}",
             notes=f"Note {words[2]}" if len(words) > 2 else "Note",
             unit="pcs",
@@ -318,8 +312,7 @@ class TestMultiWordANDLogic(TestCase):
 
         # Create item with only first word (should NOT match multi-word AND)
         item_partial = Item.objects.create(
-            code=f"PART-{words[0][:3].upper()}-{Item.objects.count()}",
-            name=f"Item {words[0]}",
+            code=f"PART-{words[0][:3].upper()}-{words[0]}-{Item.objects.count()}",
             description="No match here",
             notes="Nothing relevant",
             unit="kg",
@@ -537,7 +530,6 @@ class TestAdversarialInputSafety(TestCase):
         # Create a sample item so the endpoint has data to query against
         self.item = Item.objects.create(
             code="ADV-TEST-001",
-            name="Adversarial Test Item",
             description="Item for adversarial testing",
             unit="pcs",
             group=self.group,
@@ -705,8 +697,7 @@ class TestInvalidFilterParametersIgnored(TestCase):
         for i in range(3):
             item = Item.objects.create(
                 code=f"FILTER-TEST-{i}",
-                name=f"FilterItem{i}",
-                description=f"Description {i}",
+                description=f"FilterItem{i} Description {i}",
                 unit="pcs",
                 group=self.group,
                 brand=self.brand,
@@ -830,8 +821,7 @@ class TestPaginationStructurePreservedUnderSearch(TestCase):
         for i in range(total_records):
             item = Item.objects.create(
                 code=f"PAG-{search_term[:3].upper()}-{i}-{Item.objects.count()}",
-                name=f"Paginated {search_term} item {i}",
-                description=f"Description for pagination test {i}",
+                description=f"Paginated {search_term} item {i}",
                 unit="pcs",
                 group=self.group,
                 brand=self.brand,

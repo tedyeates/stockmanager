@@ -3,13 +3,15 @@ import math
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Max, Min
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.serializers import ValidationError
 
-from stockmanagement.models import Outstock, Item, Group, Instock, Brand
+from stockmanagement.models import Outstock, Item, Group, Instock, Brand, Job, Customer
 
 from .serializers import *
 from stockmanagement.util.custom_viewsets import FieldViewMixin, FormDataMixin
@@ -55,7 +57,7 @@ class ItemViewSet(FormDataMixin):
 class ItemFieldView(FieldViewMixin):
     model = Item
     exclude = [
-        'stock', 'modified', 'code', 'instock', 'outstock', 'max_price',
+        'stock', 'modified', 'quantity', 'instock', 'outstock', 'max_price',
         'sum_price', 'min_price', 'instock_number', 'outstock_number'
     ]
 
@@ -144,7 +146,9 @@ class InstockViewSet(FormDataMixin):
     
     def update(self, request, pk=None):
         instock = Instock.objects.get(pk=pk)
-        are_items_equal = instock.item.id == request.data["item"]["id"]
+        item_data = request.data.get("item")
+        incoming_item_id = item_data["id"] if isinstance(item_data, dict) else item_data
+        are_items_equal = instock.item.id == incoming_item_id
         
         updated_instock = super().update(request, pk)
         
@@ -223,12 +227,38 @@ class OutstockViewSet(FormDataMixin):
 class InstockFieldView(FieldViewMixin):
     model = Instock
     exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'outstock']
+    field_order = ['id', 'stock_date', 'item', 'job', 'invoice_id', 'price', 'supplier', 'purchase_order_id', 'quantity', 'notes', 'store_type']
 
 
 class OutstockFieldView(FieldViewMixin):
     model = Outstock
     exclude = ['created_date', 'modified', 'size', 'stock_ptr', 'instock', 'remaining_quantity']
+    field_order = ['id', 'stock_date', 'item', 'job', 'stock_id', 'requester', 'department', 'customer', 'quantity', 'notes', 'store_type']
 
 
 
     
+
+
+class JobViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['job_id']
+
+
+class BrandViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Brand.objects.all()
+    serializer_class = RelatedBrandSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['name']
+
+
+class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['name']
