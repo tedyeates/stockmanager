@@ -1,65 +1,199 @@
-# stockmanager
-PC Elemac Stock Management System
+# PC Elemac Stock Management System
 
-## Quick Start
+Inventory management application for tracking stock items, inbound receipts, and outbound withdrawals.
 
-After downloading you will need to create a `.env` file in the same folder as `manage.py` before deploying with the following attributes:
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Django 4.2+ / Django REST Framework |
+| Frontend | React 18 / TypeScript / Vite |
+| Database | PostgreSQL (Supabase) |
+| Styling | Tailwind CSS 3 + Material UI 5 |
+| Auth | DRF Token Authentication |
+| Hosting | Fly.io (backend) / Vercel (frontend) |
+
+## Project Structure
+
 ```
-SECRET_KEY=<Django Secret Key (Can be randomly generated *see below*)> 
-ALLOWED_HOSTS=<Elastic Beanstalk Address (Obtained after AWS Deployment)>, <React S3 Bucket Address (Obtained after AWS Deployment)>, 127.0.0.1, localhost
-SUPER_USER_USERNAME=<Username for Super User Access to Django Website>
-SUPER_USER_PASSWORD=<Password for Super User Access to Django Website>
+stockmanager/
+├── stockmanagement_bg/      # Django backend
+│   ├── stockmanagement_bg/  # Django project (settings, urls, wsgi)
+│   ├── stockmanagement/     # Main app (models, views, serializers)
+│   ├── login/               # Auth app
+│   ├── fly.toml             # Fly.io deployment config
+│   └── requirements.txt
+├── stockmanagement-fe/      # React frontend
+│   ├── src/
+│   └── package.json
 ```
 
-Omit the two AWS related addresses on initial deploy, as you can obtain these from AWS after deploying. Afterwards update `.env` and redeploy.
+## Local Development
 
-### Create Django Secret Key
+### Prerequisites
+
+- Python 3.9+
+- Node.js 18+
+- PostgreSQL (or a Supabase project)
+
+### Backend
+
+```bash
+cd stockmanagement_bg
+
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create .env file (see Environment Variables below)
+
+# Run migrations and start server
+python manage.py migrate
+python manage.py runserver
+```
+
+API available at `http://127.0.0.1:8000`
+
+### Frontend
+
+```bash
+cd stockmanagement-fe
+
+npm install
+npm start
+```
+
+App available at `http://localhost:5173`
+
+### Environment Variables
+
+Create `stockmanagement_bg/.env`:
+
+```env
+SECRET_KEY=<django-secret-key>
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+DATABASE_URL=postgres://user:password@host:5432/dbname
+CORS_ALLOW_ALL_ORIGINS=True
+```
+
+Generate a secret key:
+
 ```python
 import secrets
 print(secrets.token_urlsafe())
 ```
-Copy and paste into `.env` file.
 
-## Running Locally
+Frontend env files (already in repo):
+- `.env.development` — points to `http://127.0.0.1:8000`
+- `.env.production` — points to production backend URL
 
-### Prerequisites
-- Python 3.9+
-- Node.js and npm
+## Management Commands
 
-### Django Backend
+Run from `stockmanagement_bg/`:
 
-1. Create and activate a virtual environment:
 ```bash
-python -m venv django-env
-django-env\Scripts\activate   # Windows
-# source django-env/bin/activate  # macOS/Linux
+# Import stock data from Excel
+python manage.py loadstock
+
+# Create superuser from env vars (SUPER_USER_USERNAME, SUPER_USER_PASSWORD)
+python manage.py createsu
+
+# Backup DB then truncate all Django-managed tables
+python manage.py reset_django_tables
+
+# Backup only (no wipe)
+python manage.py reset_django_tables --backup-only
+
+# Wipe only (no backup)
+python manage.py reset_django_tables --skip-backup
 ```
 
-2. Install dependencies:
-```bash
-cd stockmanagement_bg
-pip install -r requirements.txt
-```
+Backups saved to `stockmanagement_bg/backups/` as timestamped `.sql` files. Requires `pg_dump` on PATH.
 
-3. Run migrations and start the server:
-```bash
-python manage.py migrate
-python manage.py runserver
-```
-The API will be available at `http://127.0.0.1:8000`.
+## API Endpoints
 
-### React Frontend
+Base path: `/api/`
 
-1. Install dependencies:
+| Resource | Endpoint |
+|----------|----------|
+| Groups | `/api/group/` |
+| Items | `/api/item/` |
+| Instock | `/api/instock/` |
+| Outstock | `/api/outstock/` |
+
+All endpoints require token auth. Pagination: 19 items per page.
+
+## Testing
+
+### Frontend
+
 ```bash
 cd stockmanagement-fe
-npm install
+npm test              # Vitest unit tests
 ```
 
-2. Start the development server:
+### Backend
+
 ```bash
-npm start
+cd stockmanagement_bg
+python manage.py test
 ```
-The app will be available at `http://localhost:3000`.
 
+Uses Hypothesis for property-based testing.
 
+## Deployment
+
+### Database (Supabase)
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Copy the connection string from **Settings → Database → Connection string (URI)**
+3. Use this as `DATABASE_URL` in both local `.env` and Fly.io secrets
+
+### Backend (Fly.io)
+
+Prerequisites: [Install flyctl](https://fly.io/docs/flyctl/install/)
+
+```bash
+cd stockmanagement_bg
+
+# First deploy
+fly launch          # creates app from existing fly.toml
+fly secrets set SECRET_KEY=<key> DATABASE_URL=<supabase-url> ALLOWED_HOSTS=<your-app>.fly.dev SUPER_USER_USERNAME=<user> SUPER_USER_PASSWORD=<pass>
+fly deploy
+
+# Subsequent deploys
+fly deploy
+```
+
+Migrations run automatically on each deploy via `release_command`. The app auto-stops when idle (free tier friendly).
+
+Required secrets:
+- `SECRET_KEY` — Django secret key
+- `DATABASE_URL` — Supabase PostgreSQL connection string
+- `ALLOWED_HOSTS` — `<your-app>.fly.dev` (comma-separated if multiple)
+- `SUPER_USER_USERNAME` / `SUPER_USER_PASSWORD` — for `createsu` command
+
+### Frontend (Vercel)
+
+1. Import the repo at [vercel.com](https://vercel.com)
+2. Set **Root Directory** to `stockmanagement-fe`
+3. Add environment variable: `VITE_BASE_URL` = `https://<your-app>.fly.dev`
+4. Deploy — Vercel auto-detects Vite and uses `vercel.json` config
+
+Or via CLI:
+
+```bash
+cd stockmanagement-fe
+npx vercel
+```
+
+Update `.env.production` locally to match:
+
+```env
+VITE_BASE_URL=https://<your-app>.fly.dev
+```
