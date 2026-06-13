@@ -24,9 +24,15 @@
 
 ### Backend
 
+Virtual environment at repo root: `.venv/`
+
 ```bash
+# Activate (from repo root)
+.venv\Scripts\activate              # Windows
+
+# All python/pip commands use .venv
+pip install -r stockmanagement_bg/requirements.txt
 cd stockmanagement_bg
-pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver          # Dev server at :8000
 python manage.py collectstatic      # Collect static files for production

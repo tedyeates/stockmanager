@@ -22,12 +22,30 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--skip-backup", action="store_true", help="Skip the pg_dump backup step")
         parser.add_argument("--backup-only", action="store_true", help="Only create backup, don't wipe")
+        parser.add_argument("--dry-run", action="store_true", help="List tables that would be truncated, without doing anything")
 
     def handle(self, *args, **options):
+        if options["dry_run"]:
+            self._dry_run()
+            return
         if not options["skip_backup"]:
             self._backup()
         if not options["backup_only"]:
             self._truncate()
+
+    # ── dry run ─────────────────────────────────────────────────────────
+    def _dry_run(self):
+        tables = [
+            m._meta.db_table
+            for m in apps.get_models(include_auto_created=True)
+            if m._meta.managed and not m._meta.proxy
+        ]
+        if not tables:
+            self.stdout.write("No managed tables found.")
+            return
+        self.stdout.write(f"[DRY RUN] Would truncate {len(tables)} tables:")
+        for t in tables:
+            self.stdout.write(f"  • {t}")
 
     # ── backup ────────────────────────────────────────────────────────
     def _backup(self):
@@ -50,7 +68,7 @@ class Command(BaseCommand):
     def _truncate(self):
         tables = [
             m._meta.db_table
-            for m in apps.get_models()
+            for m in apps.get_models(include_auto_created=True)
             if m._meta.managed and not m._meta.proxy
         ]
         print(tables)

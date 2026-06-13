@@ -195,9 +195,6 @@ class OutstockViewSet(FormDataMixin):
         
         item.outstock_number += 1
         item.quantity -= round(Decimal(request.data["quantity"]), 2)
-        print("NEW ITEM")
-        print(item.code)
-        print(item.outstock_number)
         item.save()
     
     def create(self, request):

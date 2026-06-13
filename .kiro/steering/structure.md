@@ -31,7 +31,7 @@ stockmanager/
 │   │   ├── pages/
 │   │   │   ├── App.tsx          # Root component
 │   │   │   ├── Navbar.tsx       # Navigation bar
-│   │   │   ├── context/         # React context providers (Login, PageChanger, PopupContextManager)
+│   │   │   ├── context/         # React context providers (Login, PageChanger, InlineEditing)
 │   │   │   ├── customhooks/     # Custom React hooks (pagination, page updates)
 │   │   │   ├── popup/           # Modal/popup components (Forms, Errors, Popups)
 │   │   │   └── table/           # Table components (Table, Pagination, Search, TableToolbar)
@@ -53,6 +53,6 @@ stockmanager/
 
 - **Backend**: Standard Django app layout with DRF ViewSets and a DefaultRouter for RESTful endpoints
 - **Frontend**: Component-based React with context providers for state management (no Redux)
-- **State flow**: Context providers (`PageChanger`, `PopupContextManager`, `Login`) manage global state; custom hooks encapsulate reusable logic
+- **State flow**: Context providers (`PageChanger`, `InlineEditing`, `Login`) manage global state; custom hooks encapsulate reusable logic
 - **API communication**: Custom `Requests` class wrapping native `fetch` — not Axios (Axios is listed as a dependency but the codebase uses the custom wrapper)
 - **Styling**: Hybrid approach — Tailwind utility classes combined with custom CSS files per component area

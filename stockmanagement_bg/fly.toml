@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for stockmanagement-bg on 2026-01-01T11:34:04Z
+# fly.toml app configuration file generated for stockmanagement-bg on 2026-06-13T08:35:55+01:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'stockmanagement-bg'
-primary_region = 'lhr'
+primary_region = 'sin'
 console_command = '/code/manage.py shell'
 
 [build]
