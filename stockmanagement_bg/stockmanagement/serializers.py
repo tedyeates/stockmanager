@@ -81,7 +81,7 @@ class ItemUpdateSerializer(ItemSerializer):
     
 class ItemExportSerializer(ItemSerializer):
     group = serializers.SlugRelatedField(read_only=True, slug_field="name")
-    brand = serializers.SlugRelatedField(read_only=True, slug_field="brand")
+    brand = serializers.SlugRelatedField(read_only=True, slug_field="name")
      
 
 

@@ -11,9 +11,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import axios from 'axios';
 import { ErrorState, hasError, Error } from '../popup/Errors';
-import { Requests } from 'util/requests';
+import { Requests, RequestError } from 'util/requests';
 
 function Copyright(props: any) {
   return (
@@ -141,7 +140,7 @@ export function Login() {
                 navigate(path, { replace: true })
             })
         } catch (e: any) {
-            if (e?.response?.data) setErrors(e.response.data)
+            if (e instanceof RequestError && e.responseData) setErrors(e.responseData)
         }
 
     }

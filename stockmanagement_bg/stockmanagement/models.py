@@ -39,7 +39,7 @@ class Brand(models.Model):
 
 class Item(models.Model):
     search_fields = ["code", "max_price", "min_price", "sum_price"]
-    number_fields = {"weight", "max_price", "min_price", "sum_price"}
+    number_fields = {"max_price", "min_price", "sum_price"}
 
     modified = models.DateTimeField(_("Date"), auto_now=True, auto_now_add=False, null=True)
     code = models.CharField(_("Item SKU"), max_length=50, unique=True)  # Glass 20x20 is GL2020
