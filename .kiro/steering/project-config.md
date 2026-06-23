@@ -1,10 +1,10 @@
 ---
 inclusion: always
 repo: tedyeates/stockmanager
-test_command: "cd stockmanagement_bg && .venv/Scripts/pytest && cd ../stockmanagement-fe && npm run test"
-type_check_command: "cd stockmanagement_bg && .venv/Scripts/pyright && cd ../stockmanagement-fe && tsc --noEmit"
+test_command: "cd stockmanagement_bg && .venv\\Scripts\\pytest && cd ../stockmanagement-fe && npm run test"
+type_check_command: "cd stockmanagement_bg && .venv\\Scripts\\pyright && cd ../stockmanagement-fe && tsc --noEmit"
 build_command: "cd stockmanagement-fe && npm run build"
-setup_command: "cd stockmanagement_bg && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt && cd ../stockmanagement-fe && npm ci"
+setup_command: "cd stockmanagement_bg && python -m venv .venv && .venv\\Scripts\\python.exe -m pip install -r requirements.txt && cd ..\\stockmanagement-fe && npm ci"
 concurrency: 3
 ---
 # Project Configuration
