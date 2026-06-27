@@ -43,3 +43,5 @@ zope.interface>=6.4.post2
 # Dev/Test dependencies
 hypothesis>=6.0
 hypothesis[django]
+pytest>=9.0
+pytest-django>=4.12

@@ -413,8 +413,8 @@ class TestCreateValidation(TestCase):
 ```bash
 # Frontend
 cd stockmanagement-fe
-npm run test              # Runs vitest (includes property tests)
-npm run e2e:run           # Runs Cypress headless
+pnpm test              # Runs vitest (includes property tests)
+pnpm e2e:run           # Runs Cypress headless
 
 # Backend
 cd stockmanagement_bg
