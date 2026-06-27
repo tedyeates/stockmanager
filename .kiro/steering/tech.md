@@ -42,12 +42,12 @@ python manage.py collectstatic      # Collect static files for production
 
 ```bash
 cd stockmanagement-fe
-npm install
-npm start                           # Dev server at :3000
-npm run build                       # Production build
-npm run e2e                         # Open Cypress interactive
-npm run e2e:run                     # Run Cypress headless
-npm run deploy                      # Sync build to S3
+pnpm install
+pnpm start                           # Dev server at :3000
+pnpm build                           # Production build
+pnpm e2e                             # Open Cypress interactive
+pnpm e2e:run                         # Run Cypress headless
+pnpm deploy:s3                      # Sync build to S3
 ```
 
 ## API Configuration

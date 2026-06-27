@@ -63,8 +63,8 @@ API available at `http://127.0.0.1:8000`
 ```bash
 cd stockmanagement-fe
 
-npm install
-npm start
+pnpm install
+pnpm start
 ```
 
 App available at `http://localhost:5173`
@@ -134,7 +134,7 @@ All endpoints require token auth. Pagination: 19 items per page.
 
 ```bash
 cd stockmanagement-fe
-npm test              # Vitest unit tests
+pnpm test              # Vitest unit tests
 ```
 
 ### Backend

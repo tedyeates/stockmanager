@@ -11,7 +11,6 @@ django-crispy-forms>=2.3
 django-filter>=23.0
 django-environ>=0.11.2
 django-extensions>=3.2.3
-django-jsonfield>=1.4.1
 django-threadlocals==0.10
 djangorestframework>=3.15.2
 et-xmlfile>=1.1.0
@@ -44,3 +43,5 @@ zope.interface>=6.4.post2
 # Dev/Test dependencies
 hypothesis>=6.0
 hypothesis[django]
+pytest>=9.0
+pytest-django>=4.12

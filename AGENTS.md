@@ -97,7 +97,7 @@ Pagination: 19 items/page. Search: `?search=term`. Filters: `?field__gte=X&field
 ## Testing
 
 - **Backend**: `python manage.py test` — Hypothesis property-based tests for search, inline editing API
-- **Frontend**: `npm test` (Vitest) — fast-check property tests + @testing-library/react unit tests
+- **Frontend**: `pnpm test` (Vitest) — fast-check property tests + @testing-library/react unit tests
 - **E2E**: Cypress in `stockmanagement-fe/cypress/`
 
 ## Detailed Documentation
